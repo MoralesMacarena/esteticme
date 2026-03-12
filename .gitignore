@@ -1,0 +1,13 @@
+# Entornos virtuales
+venv/
+env/
+
+# Archivos compilados de Python
+__pycache__/
+*.pyc
+
+# Base de datos local de desarrollo
+db.sqlite3
+
+# Variables de entorno (futuras contraseñas)
+.env

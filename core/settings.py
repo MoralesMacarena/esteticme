@@ -37,6 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # --- Mis apps ---
+    'bookings',
+    'users',
+    'blog',
 ]
 
 MIDDLEWARE = [
@@ -74,8 +78,12 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'esteticme_db',      # El nombre que le pusiste en pgAdmin
+        'USER': 'postgres',          # El usuario por defecto
+        'PASSWORD': 'admin', # ¡Cambia esto por tu contraseña real!
+        'HOST': 'localhost',         # Significa que está en tu propio PC
+        'PORT': '5432',              # El puerto por defecto de PostgreSQL
     }
 }
 
@@ -115,3 +123,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+AUTH_USER_MODEL = 'users.CustomUser'
