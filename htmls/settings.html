@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>EsteticMe - Ajustes de Cuenta</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f48c25",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#221910",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem", 
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-display flex flex-col min-h-screen">
+
+    <header class="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-gray-200">
+        <div class="mx-auto flex max-w-7xl items-center justify-between whitespace-nowrap px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex items-center gap-8">
+                <a href="index.html" class="flex items-center gap-3 text-[#181411]">
+                    <div class="size-6 text-[#f48c25]">
+                        <svg fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z"></path>
+                            <path clip-rule="evenodd" d="M39.998 35.764C39.9944 35.7463 39.9875 35.7155 39.9748 35.6706C39.9436 35.5601 39.8949 35.4259 39.8346 35.2825C39.8168 35.2403 39.7989 35.1993 39.7813 35.1602C38.5103 34.2887 35.9788 33.0607 33.7095 32.5189C30.9875 31.8691 27.6413 31.4783 24 31.4783C20.3587 31.4783 17.0125 31.8691 14.2905 32.5189C12.0012 33.0654 9.44505 34.3104 8.18538 35.1832C8.17384 35.2075 8.16216 35.233 8.15052 35.2592C8.09919 35.3751 8.05721 35.4886 8.02977 35.589C8.00356 35.6848 8.00039 35.7333 8.00004 35.7388C8.00004 35.739 8 35.7393 8.00004 35.7388C8.00004 35.7641 8.0104 36.0767 8.68485 36.6314C9.34546 37.1746 10.4222 37.7531 11.9291 38.2772C14.9242 39.319 19.1919 40 24 40C28.8081 40 33.0758 39.319 36.0709 38.2772C37.5778 37.7531 38.6545 37.1746 39.3151 36.6314C39.9006 36.1499 39.9857 35.8511 39.998 35.764ZM4.95178 32.7688L21.4543 6.30267C22.6288 4.4191 25.3712 4.41909 26.5457 6.30267L43.0534 32.777C43.0709 32.8052 43.0878 32.8338 43.104 32.8629L41.3563 33.8352C43.104 32.8629 43.1038 32.8626 43.104 32.8629L43.1051 32.865L43.1065 32.8675L43.1101 32.8739L43.1199 32.8918C43.1276 32.906 43.1377 32.9246 43.1497 32.9473C43.1738 32.9925 43.2062 33.0545 43.244 33.1299C43.319 33.2792 43.4196 33.489 43.5217 33.7317C43.6901 34.1321 44 34.9311 44 35.7391C44 37.4427 43.003 38.7775 41.8558 39.7209C40.6947 40.6757 39.1354 41.4464 37.385 42.0552C33.8654 43.2794 29.133 44 24 44C18.867 44 14.1346 43.2794 10.615 42.0552C8.86463 41.4464 7.30529 40.6757 6.14419 39.7209C4.99695 38.7775 3.99999 37.4427 3.99999 35.7391C3.99999 34.8725 4.29264 34.0922 4.49321 33.6393C4.60375 33.3898 4.71348 33.1804 4.79687 33.0311C4.83898 32.9556 4.87547 32.8935 4.9035 32.8471C4.91754 32.8238 4.92954 32.8043 4.93916 32.7889L4.94662 32.777L4.95178 32.7688ZM35.9868 29.004L24 9.77997L12.0131 29.004C12.4661 28.8609 12.9179 28.7342 13.3617 28.6282C16.4281 27.8961 20.0901 27.4783 24 27.4783C27.9099 27.4783 31.5719 27.8961 34.6383 28.6282C35.082 28.7342 35.5339 28.8609 35.9868 29.004Z" fill="currentColor" fill-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-[#181411] text-xl font-bold leading-tight tracking-[-0.015em]">EsteticMe</h2>
+                </a>
+            </div>
+            
+            <div class="flex flex-1 justify-center items-center gap-8">
+                <div class="hidden md:flex items-center gap-9">
+                    <a class="text-[#181411] text-sm font-medium leading-normal hover:text-primary transition-colors" href="blog.html">Blog</a>
+                    <a class="text-[#181411] text-sm font-medium leading-normal hover:text-primary transition-colors" href="salones.html">Salones</a>
+                    <a class="text-[#181411] text-sm font-medium leading-normal hover:text-primary transition-colors" href="tratamientos.html">Tratamientos</a>
+                </div>
+                <label class="flex flex-col min-w-40 !h-10 max-w-sm ml-8">
+                    <div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+                        <div class="text-[#8a7560] flex border-none bg-[#f5f2f0] items-center justify-center pl-4 rounded-l-lg border-r-0">
+                            <span class="material-symbols-outlined">search</span>
+                        </div>
+                        <input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#181411] focus:outline-0 focus:ring-0 border-none bg-[#f5f2f0] focus:border-none h-full placeholder:text-[#8a7560] px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal" placeholder="Search" value=""/>
+                    </div>
+                </label>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <span class="hidden sm:block text-[#181411] font-bold text-sm">Macarena</span>
+                <a href="perfil.html" class="flex items-center justify-center size-10 rounded-full bg-primary text-white font-bold text-lg hover:bg-orange-600 transition-colors shadow-sm">
+                    M
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full px-4 sm:px-6 lg:px-8 py-10">
+        <div class="w-full max-w-xl mx-auto mt-6">
+            <div class="bg-white rounded-xl shadow-sm p-8 border border-gray-100">
+                <div class="mb-8">
+                    <h1 class="text-2xl md:text-3xl font-black text-[#181411] tracking-tight">Editar Datos Personales</h1>
+                    <p class="text-gray-500 mt-2">Actualiza tu información de contacto y seguridad.</p>
+                </div>
+
+                <form class="flex flex-col gap-6">
+                    <div class="flex flex-col gap-6">
+                        <label class="flex flex-col">
+                            <span class="text-[#181411] text-sm font-semibold mb-2">Nombre Completo</span>
+                            <input class="w-full rounded-lg border border-gray-300 bg-white h-12 px-4 text-base focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all placeholder:text-gray-400" value="Macarena"/>
+                        </label>
+                        <label class="flex flex-col">
+                            <span class="text-[#181411] text-sm font-semibold mb-2">Teléfono</span>
+                            <input class="w-full rounded-lg border border-gray-300 bg-white h-12 px-4 text-base focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all placeholder:text-gray-400" type="tel" value="+34 600 123 456"/>
+                        </label>
+                        <label class="flex flex-col">
+                            <span class="text-[#181411] text-sm font-semibold mb-2">Email</span>
+                            <input class="w-full rounded-lg border border-gray-200 bg-gray-100 h-12 px-4 text-base text-gray-500 outline-none cursor-not-allowed" disabled type="email" value="macarena.morales@email.com"/>
+                        </label>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-6 mt-2">
+                        <h3 class="text-base font-bold text-[#181411] mb-4">Cambiar Contraseña</h3>
+                        <div class="grid grid-cols-1 gap-6">
+                            <label class="flex flex-col">
+                                <span class="text-[#181411] text-sm font-semibold mb-2">Nueva Contraseña</span>
+                                <input class="w-full rounded-lg border border-gray-300 bg-white h-12 px-4 text-base focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all placeholder:text-gray-400" placeholder="••••••••" type="password"/>
+                            </label>
+                            <label class="flex flex-col">
+                                <span class="text-[#181411] text-sm font-semibold mb-2">Confirmar Nueva Contraseña</span>
+                                <input class="w-full rounded-lg border border-gray-300 bg-white h-12 px-4 text-base focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all placeholder:text-gray-400" placeholder="••••••••" type="password"/>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-center gap-4 border-t border-gray-200 pt-6 mt-2">
+                        <a href="perfil.html" class="flex items-center justify-center rounded-lg h-12 px-6 bg-primary text-white text-base font-bold hover:bg-orange-600 transition-colors w-full shadow-sm">
+                            Guardar Cambios
+                        </a>
+                        <a href="perfil.html" class="text-gray-500 font-semibold text-sm hover:text-[#181411] transition-colors">Cancelar</a>
+                    </div>
+
+                    <div class="mt-4 pt-4 flex justify-center">
+                        <a href="login.html" class="text-red-500 hover:text-red-700 text-xs font-semibold hover:underline transition-colors">
+                            Eliminar mi cuenta definitivamente
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="w-full bg-black py-6 mt-auto">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-white">Macarena Morales Toledo © 2025</p>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>EsteticMe - Elegir Hora</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f48c25",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#221910",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem", 
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-display flex flex-col min-h-screen">
+
+    <header class="sticky top-0 z-50 w-full bg-white shadow-sm">
+        <div class="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex items-center gap-3">
+                <a href="salon-detail.html" class="flex items-center justify-center size-8 rounded-full hover:bg-gray-100 text-gray-600">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+                <span class="font-bold text-[#181411]">Volver al Salón</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Paso 1 de 2</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mx-auto max-w-5xl flex flex-col lg:flex-row gap-8">
+            
+            <div class="flex-1 flex flex-col gap-6">
+                
+                <h1 class="text-2xl font-black text-[#181411]">Elige fecha y hora</h1>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        
+                        <div class="w-full md:w-1/2">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="font-bold text-lg">Octubre 2025</span>
+                                <div class="flex gap-2">
+                                    <button class="p-1 hover:bg-gray-100 rounded"><span class="material-symbols-outlined">chevron_left</span></button>
+                                    <button class="p-1 hover:bg-gray-100 rounded"><span class="material-symbols-outlined">chevron_right</span></button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-2 text-center text-sm mb-2">
+                                <span class="text-gray-400 text-xs">L</span>
+                                <span class="text-gray-400 text-xs">M</span>
+                                <span class="text-gray-400 text-xs">X</span>
+                                <span class="text-gray-400 text-xs">J</span>
+                                <span class="text-gray-400 text-xs">V</span>
+                                <span class="text-gray-400 text-xs">S</span>
+                                <span class="text-gray-400 text-xs">D</span>
+                            </div>
+                            <div class="grid grid-cols-7 gap-2 text-center">
+                                <span></span><span></span>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-400 line-through">1</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-400 line-through">2</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-400 line-through">3</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">4</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">5</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">6</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">7</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">8</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">9</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">10</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">11</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">12</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">13</button>
+                                <button class="size-9 rounded-full bg-[#181411] text-white font-bold shadow-lg">14</button>
+                                <button class="size-9 rounded-full hover:bg-gray-100 text-gray-600">15</button>
+                            </div>
+                        </div>
+
+                        <div class="w-full md:w-1/2 border-t md:border-t-0 md:border-l border-gray-100 pt-6 md:pt-0 md:pl-6">
+                            <h4 class="font-bold mb-4">Mañana</h4>
+                            <div class="grid grid-cols-3 gap-3 mb-6">
+                                <button class="py-2 px-3 border border-gray-200 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors">09:30</button>
+                                <button class="py-2 px-3 border border-gray-200 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors">10:00</button>
+                                <button class="py-2 px-3 border border-gray-200 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors">11:15</button>
+                            </div>
+                            
+                            <h4 class="font-bold mb-4">Tarde</h4>
+                            <div class="grid grid-cols-3 gap-3">
+                                <button class="py-2 px-3 border border-gray-200 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors">16:00</button>
+                                <button class="py-2 px-3 bg-primary text-white font-bold rounded-lg text-sm shadow-md">16:30</button>
+                                <button class="py-2 px-3 border border-gray-200 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors">17:00</button>
+                                <button class="py-2 px-3 border border-gray-200 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors">17:45</button>
+                                <button class="py-2 px-3 border border-gray-200 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors">18:30</button>
+                                <button class="py-2 px-3 border border-gray-200 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors">19:00</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="w-full lg:w-96">
+                <div class="sticky top-24 bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+                    <h3 class="font-bold text-lg mb-4 border-b border-gray-100 pb-2">Resumen</h3>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-500">Salón</p>
+                        <p class="font-bold text-[#181411]">Glamour Estilistas</p>
+                        <p class="text-xs text-gray-500">Calle Mayor, 12</p>
+                    </div>
+
+                    <div class="flex justify-between items-start text-sm mb-4 bg-gray-50 p-3 rounded-lg">
+                        <div>
+                            <p class="font-bold text-[#181411]">Corte Mujer</p>
+                            <p class="text-gray-500">45 min</p>
+                        </div>
+                        <p class="font-bold">25,00 €</p>
+                    </div>
+
+                    <div class="space-y-2 mb-6">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Fecha</span>
+                            <span class="font-bold text-[#181411]">14 Oct, 2025</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Hora</span>
+                            <span class="font-bold text-[#181411]">16:30</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-lg font-black text-[#181411] border-t border-gray-100 pt-4 mb-6">
+                        <span>Total a pagar</span>
+                        <span>25,00 €</span>
+                    </div>
+
+                    <a href="booking-summary.html" class="flex items-center justify-center w-full h-12 bg-primary text-white font-bold rounded-lg hover:bg-orange-600 transition-colors shadow-sm mb-3">
+                        Confirmar Reserva
+                    </a>
+                    <p class="text-xs text-center text-gray-400">Pago en el local al finalizar.</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="w-full bg-black py-6 mt-auto">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-white">Macarena Morales Toledo © 2025</p>
+        </div>
+    </footer>
+
+</body>
+</html>
