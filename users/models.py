@@ -15,11 +15,14 @@ class CustomUser(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='client')
     full_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=20, blank=True, null=True)
+    profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
     
     # Campos exclusivos para profesionales (pueden quedar vacíos para los clientes)
     business_name = models.CharField(max_length=150, blank=True, null=True)
     business_address = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
+    salon_picture = models.ImageField(upload_to='salons/', blank=True, null=True)
+    
 
     # Le decimos a Django que queremos ver el email cuando busquemos un usuario
     def __str__(self):
