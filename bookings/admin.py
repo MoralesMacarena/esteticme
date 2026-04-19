@@ -1,8 +1,13 @@
 from django.contrib import admin
-from .models import Service, Booking, Availability, Review # <-- Importamos las 4 tablas
+from .models import Service, Booking, Availability, Review, Category
 
 # 1. Servicios
-admin.site.register(Service)
+admin.site.register(Category)
+
+@admin.register(Service)
+class ServiceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'category', 'professional', 'price', 'is_active') # Añadimos category a la lista
+    list_filter = ('category', 'is_active', 'professional')
 
 # 2. Reservas
 @admin.register(Booking)

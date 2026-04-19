@@ -49,6 +49,13 @@ export default function SalonDetail() {
       : `${backendUrl}${salon.salon_picture}`
     : "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200";
 
+  const groupedServices = salon.services.reduce((acc, service) => {
+    const cat = service.category_name || "Otros";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(service);
+    return acc;
+  }, {});
+
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8">
       {/* Botón de volver */}
@@ -91,41 +98,55 @@ export default function SalonDetail() {
         </div>
       </div>
 
-      {/* Lista de Servicios */}
+      {/* Lista de Servicios Categorizada */}
       <div className="mb-10">
         <h2 className="text-2xl font-bold text-[#181411] mb-6">
           Nuestros Servicios
         </h2>
 
         {salon.services && salon.services.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {salon.services.map((service) => (
-              <div
-                key={service.id}
-                className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start hover:shadow-md transition-shadow"
-              >
-                <div className="pr-4">
-                  <h3 className="font-bold text-lg text-[#181411]">
-                    {service.name}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {service.description}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs">
-                      schedule
-                    </span>
-                    {service.duration_minutes} min
-                  </p>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="font-bold text-lg text-[#181411]">
-                    {service.price}€
-                  </span>
-                  {/* El botón de reservar lo conectaremos más adelante */}
-                  <button className="mt-3 bg-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors">
-                    Reservar
-                  </button>
+          <div className="space-y-10">
+            {" "}
+            {/* Espaciado grande entre categorías */}
+            {/* Recorremos las categorías generadas */}
+            {Object.keys(groupedServices).map((category) => (
+              <div key={category}>
+                {/* Título de la categoría */}
+                <h3 className="text-xl font-bold text-[#181411] border-b border-gray-200 pb-2 mb-4">
+                  {category}
+                </h3>
+
+                {/* Grid de servicios para esta categoría en concreto */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {groupedServices[category].map((service) => (
+                    <div
+                      key={service.id}
+                      className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start hover:shadow-md transition-shadow"
+                    >
+                      <div className="pr-4">
+                        <h4 className="font-bold text-lg text-[#181411]">
+                          {service.name}
+                        </h4>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {service.description}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs">
+                            schedule
+                          </span>
+                          {service.duration_minutes} min
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="font-bold text-lg text-[#181411]">
+                          {service.price}€
+                        </span>
+                        <button className="mt-3 bg-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors">
+                          Reservar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

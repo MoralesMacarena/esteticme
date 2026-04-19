@@ -1,11 +1,25 @@
 from django.db import models
 from django.conf import settings # Para poder enlazar con tu CustomUser
 
+class Category(models.Model):
+    name = models.CharField(max_length=100)
+    icon = models.CharField(max_length=50, help_text="Nombre del icono de Google Fonts (ej: 'face', 'content_cut')")
+
+    def __str__(self):
+        return self.name
+
 class Service(models.Model):
     # Relacionamos el servicio con el usuario que lo ofrece (el profesional)
     professional = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE,
+        related_name='services'
+    )
+    category = models.ForeignKey(
+        Category, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
         related_name='services'
     )
     name = models.CharField(max_length=100)

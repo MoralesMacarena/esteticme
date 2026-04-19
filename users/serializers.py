@@ -4,10 +4,12 @@ from bookings.models import Service # <-- Importamos el modelo de la otra app
 
 # 1. Creamos el Serializer para los Servicios
 class ServiceSerializer(serializers.ModelSerializer):
+    # Para que envíe el nombre de la categoría en lugar de solo el ID
+    category_name = serializers.ReadOnlyField(source='category.name')
+
     class Meta:
         model = Service
-        # Mandamos los datos que nos interesan para pintar la tarjeta en React
-        fields = ['id', 'name', 'description', 'price', 'duration_minutes', 'is_active']
+        fields = ['id', 'name', 'description', 'price', 'duration_minutes', 'is_active', 'category_name']
 
 # 2. Actualizamos tu Serializer de Usuarios
 class UserSerializer(serializers.ModelSerializer):
