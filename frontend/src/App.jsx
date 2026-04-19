@@ -4,6 +4,7 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Salones from "./pages/Salones";
+import SalonDetail from "./pages/SalonDetail";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/salones" element={<Salones />} />
+            <Route path="/salones/:id" element={<SalonDetail />} />
           </Routes>
         </main>
 
