@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 
 export default function Login() {
   // 1. Aquí definimos username correctamente
@@ -10,6 +10,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -31,7 +32,15 @@ export default function Login() {
       if (response.ok) {
         localStorage.setItem("access_token", data.access);
         localStorage.setItem("refresh_token", data.refresh);
-        navigate("/");
+
+        // --- LA MAGIA NUEVA EMPIEZA AQUÍ ---
+        // Miramos si la página anterior (el Salón) nos dejó un recado
+        const returnTo = location.state?.returnTo || "/";
+        const savedData = location.state?.savedData || null;
+
+        // Navegamos al destino con los datos en la mochila
+        navigate(returnTo, { state: savedData });
+        // --- LA MAGIA NUEVA TERMINA AQUÍ ---
       } else {
         setError(
           "Usuario o contraseña incorrectos. Por favor, inténtalo de nuevo.",

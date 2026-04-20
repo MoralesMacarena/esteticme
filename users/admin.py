@@ -1,6 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser
+from .models import CustomUser, SalonImage
+
+class SalonImageInline(admin.TabularInline):
+    model = SalonImage
+    extra = 1 # Muestra 1 fila vacía por defecto para subir una foto nueva
+    fields = ('image', 'alt_text', 'is_cover')
 
 class CustomUserAdmin(UserAdmin):
     # 1. Columnas de la lista principal
@@ -30,6 +35,8 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('business_name', 'business_address', 'salon_picture'),
         }),
     )
+
+    inlines = [SalonImageInline]
 
 # Registramos el modelo con la configuración nueva
 admin.site.register(CustomUser, CustomUserAdmin)

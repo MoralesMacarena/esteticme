@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Salones from "./pages/Salones";
 import SalonDetail from "./pages/SalonDetail";
+import Checkout from "./pages/Checkout";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/salones" element={<Salones />} />
             <Route path="/salones/:id" element={<SalonDetail />} />
+            <Route path="/checkout" element={<Checkout />} />
           </Routes>
         </main>
 

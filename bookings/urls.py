@@ -1,14 +1,13 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ServiceViewSet, BookingViewSet, AvailabilityViewSet, ReviewViewSet
+from .views import BookingViewSet, ServiceViewSet, AvailabilityViewSet, ReviewViewSet
 
-# El enrutador mágico
+# Creamos el router para bookings
 router = DefaultRouter()
-# Registramos todas nuestras rutas
-router.register(r'services', ServiceViewSet)
-router.register(r'bookings', BookingViewSet)
-router.register(r'availabilities', AvailabilityViewSet)
-router.register(r'reviews', ReviewViewSet)
+router.register(r'citas', BookingViewSet, basename='booking')
+router.register(r'servicios', ServiceViewSet, basename='service')
+router.register(r'disponibilidad', AvailabilityViewSet, basename='availability')
+router.register(r'resenas', ReviewViewSet, basename='review')
 
 urlpatterns = [
     path('', include(router.urls)),

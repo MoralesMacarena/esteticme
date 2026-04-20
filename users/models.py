@@ -24,6 +24,28 @@ class CustomUser(AbstractUser):
     salon_picture = models.ImageField(upload_to='salons/', blank=True, null=True)
     
 
-    # Le decimos a Django que queremos ver el email cuando busquemos un usuario
+        # Le decimos a Django que queremos ver el email cuando busquemos un usuario
     def __str__(self):
-        return self.email
+            return self.email
+    
+    
+class SalonImage(models.Model):
+        # Apuntamos a tu CustomUser, pero solo permitimos seleccionar a los que son profesionales
+        professional = models.ForeignKey(
+            'CustomUser',
+            on_delete=models.CASCADE,
+            related_name='gallery_images',
+            limit_choices_to={'role': 'professional'}
+        )
+    
+        # Las imágenes de la galería irán a esta subcarpeta
+        image = models.ImageField(upload_to='salon_gallery/')
+    
+        alt_text = models.CharField(max_length=100, blank=True, null=True)
+        is_cover = models.BooleanField(default=False, help_text="¿Es la foto principal de la galería?")
+        created_at = models.DateTimeField(auto_now_add=True)
+    
+        def __str__(self):
+            # Si el profesional no tiene puesto business_name, usamos su full_name
+            name = self.professional.business_name or self.professional.full_name
+            return f"Foto de galería - {name}"

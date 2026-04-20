@@ -10,11 +10,22 @@ class ServiceAdmin(admin.ModelAdmin):
     list_filter = ('category', 'is_active', 'professional')
 
 # 2. Reservas
-@admin.register(Booking)
+
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ('client', 'professional', 'service', 'booking_date', 'start_time', 'status')
-    list_filter = ('status', 'booking_date')
-    search_fields = ('client__email', 'service__name')
+    # 1. Quitamos 'service' de la lista y ponemos nuestra función inventada 'get_services'
+    list_display = ('client', 'professional', 'booking_date', 'start_time', 'status', 'get_services')
+    
+    # ... si tienes search_fields o list_filter, déjalos como los tenías ...
+
+    # 2. Creamos esta pequeña función mágica para mostrar los servicios como texto separado por comas
+    def get_services(self, obj):
+        # Recorre los servicios elegidos y une sus nombres con una coma
+        return ", ".join([service.name for service in obj.services.all()])
+    
+    # Le ponemos el nombre bonito a la columna
+    get_services.short_description = 'Servicios'
+
+admin.site.register(Booking, BookingAdmin)
 
 # 3. Disponibilidad (Horarios)
 @admin.register(Availability)
