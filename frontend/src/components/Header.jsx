@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 export default function Header() {
   const navigate = useNavigate();
   const location = useLocation(); // Nos sirve para saber en qué página estamos
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Estado para saber si estamos logueados
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -31,8 +32,15 @@ export default function Header() {
     navigate("/login");
   };
 
+  const handleSearch = (e) => {
+    if (e.key === "Enter" && searchTerm.trim() !== "") {
+      // Mandamos al usuario a la página de salones con el parámetro de búsqueda
+      navigate(`/salones?search=${searchTerm}`);
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-10 w-full bg-white shadow-sm">
+    <header className="sticky top-0 z-[100] w-full bg-white shadow-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between whitespace-nowrap px-4 sm:px-6 lg:px-8 py-3">
         {/* LOGO */}
         <div className="flex items-center gap-8">
@@ -87,6 +95,9 @@ export default function Header() {
               <input
                 className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#181411] focus:outline-0 focus:ring-0 border-none bg-[#f5f2f0] focus:border-none h-full placeholder:text-[#8a7560] px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal"
                 placeholder="Buscar salones o servicios..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleSearch}
               />
             </div>
           </label>
