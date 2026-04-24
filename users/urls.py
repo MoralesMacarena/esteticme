@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UserViewSet, ProfessionalViewSet # <-- Importamos las dos vistas
+from .views import UserViewSet, ProfessionalViewSet 
 
 # El enrutador mágico
 router = DefaultRouter()

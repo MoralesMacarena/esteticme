@@ -32,6 +32,7 @@ export default function Login() {
       if (response.ok) {
         localStorage.setItem("access_token", data.access);
         localStorage.setItem("refresh_token", data.refresh);
+        localStorage.setItem("user_role", data.role);
 
         // --- LA MAGIA NUEVA EMPIEZA AQUÍ ---
         // Miramos si la página anterior (el Salón) nos dejó un recado

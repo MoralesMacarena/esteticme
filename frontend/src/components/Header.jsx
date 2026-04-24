@@ -3,38 +3,39 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 
 export default function Header() {
   const navigate = useNavigate();
-  const location = useLocation(); // Nos sirve para saber en qué página estamos
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Estado para saber si estamos logueados
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null); // NUEVO ESTADO: Guardamos el rol
 
-  // Este "useEffect" mira si hay token cada vez que cambiamos de página
   useEffect(() => {
     const token = localStorage.getItem("access_token");
+    const role = localStorage.getItem("user_role"); // NUEVO: Leemos el rol guardado
+
     if (token) {
       setIsAuthenticated(true);
+      setUserRole(role || "client"); // Si por algún motivo no hay rol, asumimos cliente por seguridad
     } else {
       setIsAuthenticated(false);
+      setUserRole(null);
     }
-  }, [location]); // Se vuelve a ejecutar si la URL cambia
+  }, [location]);
 
-  // Función para cerrar sesión
   const handleLogout = () => {
-    // 1. Rompemos las pulseras VIP
+    // Limpiamos TODA la basura del localStorage
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_role"); // <-- Importante no olvidar esto
 
-    // 2. Actualizamos el estado
     setIsAuthenticated(false);
+    setUserRole(null);
 
-    // 3. Lo mandamos a la Home (o al Login)
     navigate("/login");
   };
 
   const handleSearch = (e) => {
     if (e.key === "Enter" && searchTerm.trim() !== "") {
-      // Mandamos al usuario a la página de salones con el parámetro de búsqueda
       navigate(`/salones?search=${searchTerm}`);
     }
   };
@@ -42,7 +43,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-[100] w-full bg-white shadow-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between whitespace-nowrap px-4 sm:px-6 lg:px-8 py-3">
-        {/* LOGO */}
+        {/* LOGO (Se mantiene igual) */}
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-3 text-[#181411]">
             <div className="size-6 text-[#f48c25]">
@@ -65,7 +66,7 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* BUSCADOR Y LINKS CENTRALES */}
+        {/* BUSCADOR Y LINKS CENTRALES (Se mantienen igual) */}
         <div className="flex flex-1 justify-center items-center gap-8">
           <div className="hidden md:flex items-center gap-9">
             <Link
@@ -103,20 +104,34 @@ export default function Header() {
           </label>
         </div>
 
-        {/* ZONA DERECHA: Renderizado Condicional */}
+        {/* ZONA DERECHA: Renderizado Condicional por Roles */}
         <div className="flex gap-4 items-center">
           {isAuthenticated ? (
-            // SI ESTÁ LOGUEADO: Mostramos su perfil y botón de salir
             <>
-              <Link
-                to="/perfil"
-                className="flex items-center gap-2 text-sm font-bold text-[#181411] hover:text-[#f48c25] transition-colors"
-              >
-                <span className="material-symbols-outlined">
-                  account_circle
-                </span>
-                <span className="hidden sm:inline">Mi Perfil</span>
-              </Link>
+              {/* MAGIA: Discriminamos por ROL */}
+              {userRole === "professional" ? (
+                // BOTÓN PARA PROFESIONALES
+                <Link
+                  to="/panel"
+                  className="flex items-center gap-2 text-sm font-bold text-[#181411] hover:text-[#f48c25] transition-colors"
+                >
+                  <span className="material-symbols-outlined">storefront</span>
+                  <span className="hidden sm:inline">Mi Panel</span>
+                </Link>
+              ) : (
+                // BOTÓN PARA CLIENTES NORMALES
+                <Link
+                  to="/perfil"
+                  className="flex items-center gap-2 text-sm font-bold text-[#181411] hover:text-[#f48c25] transition-colors"
+                >
+                  <span className="material-symbols-outlined">
+                    account_circle
+                  </span>
+                  <span className="hidden sm:inline">Mi Perfil</span>
+                </Link>
+              )}
+
+              {/* EL BOTÓN DE SALIR ES COMÚN */}
               <button
                 onClick={handleLogout}
                 className="text-sm font-bold text-gray-500 hover:text-red-500 transition-colors ml-2"
@@ -125,19 +140,19 @@ export default function Header() {
               </button>
             </>
           ) : (
-            // SI NO ESTÁ LOGUEADO: Mostramos Login y Registro
+            // SI NO ESTÁ LOGUEADO
             <>
               <Link
                 to="/login"
                 className="flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-white text-[#181411] text-sm font-bold border border-gray-300 hover:bg-gray-50 transition-colors"
               >
-                Login
+                Entrar
               </Link>
               <Link
                 to="/signup"
                 className="flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-[#f48c25] text-white text-sm font-bold hover:bg-orange-600 transition-colors shadow-sm"
               >
-                Sign Up
+                Registrarse
               </Link>
             </>
           )}

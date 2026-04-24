@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import CustomUser, SalonImage # <-- IMPORTANTE: Añadimos SalonImage
+from .models import CustomUser, SalonImage 
 from bookings.models import Service 
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 # 1. Serializer para las Imágenes de la Galería (¡Lo Nuevo!)
 class SalonImageSerializer(serializers.ModelSerializer):
@@ -33,3 +34,17 @@ class UserSerializer(serializers.ModelSerializer):
             'services',       # Tus servicios
             'gallery_images'  # <-- Tus nuevas fotos de galería
         ]
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        # 1. Ejecutamos la validación normal (que comprueba usuario y contraseña)
+        data = super().validate(attrs)
+
+        # 2. self.user contiene el usuario que acaba de hacer login correctamente
+        # Añadimos nuestro campo extra al diccionario de respuesta
+        data['role'] = self.user.role
+        
+        # (Opcional) Puedes mandar más cosas si quieres, como el nombre:
+        # data['full_name'] = self.user.full_name
+
+        return data
