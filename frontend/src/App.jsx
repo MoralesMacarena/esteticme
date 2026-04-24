@@ -6,6 +6,9 @@ import Login from "./pages/Login";
 import Salones from "./pages/Salones";
 import SalonDetail from "./pages/SalonDetail";
 import Checkout from "./pages/Checkout";
+import Success from "./pages/Success";
+import Signup from "./pages/Signup";
+import SignupBusiness from "./pages/SignupBusiness";
 
 export default function App() {
   return (
@@ -21,6 +24,9 @@ export default function App() {
             <Route path="/salones" element={<Salones />} />
             <Route path="/salones/:id" element={<SalonDetail />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/success" element={<Success />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/signup-business" element={<SignupBusiness />} />
           </Routes>
         </main>
 

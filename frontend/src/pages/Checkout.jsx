@@ -81,9 +81,15 @@ export default function Checkout() {
       );
 
       if (response.ok) {
-        alert("¡Reserva confirmada con éxito!");
-        // Aquí en un futuro podríamos mandarlo a una página bonita de "Reserva Completada"
-        navigate("/");
+        // En lugar del alert, navegamos a /success y le pasamos los datos en el "state"
+        navigate("/success", {
+          state: {
+            salon: salon,
+            selectedDate: selectedDate,
+            selectedTime: selectedTime,
+            totalPrice: totalPrice,
+          },
+        });
       } else {
         const errorData = await response.json();
         console.error("Error del servidor:", errorData);
