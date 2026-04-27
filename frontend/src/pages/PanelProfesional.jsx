@@ -66,7 +66,6 @@ export default function PanelProfesional() {
     }
   }, []);
 
-  // --- FUNCIÓN PARA CAMBIAR EL ESTADO ---
   const handleStatusChange = async (bookingId, newStatus) => {
     const token = localStorage.getItem("access_token");
 
@@ -97,7 +96,6 @@ export default function PanelProfesional() {
     }
   };
 
-  // Función ajustada a los STATUS_CHOICES exactos de Django
   const getStatusColor = (status) => {
     switch (status) {
       case "confirmed":
@@ -120,6 +118,7 @@ export default function PanelProfesional() {
     <div className="bg-gray-50 min-h-screen font-sans">
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="mx-auto max-w-7xl">
+          {/* ¡AQUÍ ESTÁ EL SALUDO QUE SE HABÍA PERDIDO! */}
           <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-gray-200 pb-4">
             <div>
               <h1 className="text-3xl font-black text-[#181411]">
@@ -201,7 +200,6 @@ export default function PanelProfesional() {
                             </p>
                           </div>
                           <div>
-                            {/* Ahora Django sí nos manda client_name */}
                             <p className="font-bold text-[#181411] text-lg capitalize">
                               {booking.client_name || "Cliente Web"}
                             </p>
@@ -212,7 +210,6 @@ export default function PanelProfesional() {
                           </div>
                         </div>
 
-                        {/* Selector ajustado a las keys de tu DB */}
                         <select
                           value={booking.status || "pending"}
                           onChange={(e) =>

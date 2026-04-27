@@ -1,26 +1,53 @@
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from .models import Service, Booking, Availability, Review
 from .serializers import ServiceSerializer, BookingSerializer, AvailabilitySerializer, ReviewSerializer
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
-    permission_classes = [IsAuthenticated] # Solo usuarios logueados pueden reservar
+    permission_classes = [IsAuthenticated] 
 
     def perform_create(self, serializer):
-        # 1. Asignamos automáticamente el cliente que está logueado
-        # 2. El cálculo de 'end_time' y la gestión de 'services' 
-        #    ya la configuramos en el Serializer anteriormente.
         serializer.save(client=self.request.user)
 
     def get_queryset(self):
-        # Opcional: Esto hace que si un cliente consulta sus citas, 
-        # solo vea las suyas y no las de todo el mundo.
         user = self.request.user
-        if user.is_staff:
-            return Booking.objects.all()
-        return Booking.objects.filter(client=user)
+        
+        # 1. ¡CORRECCIÓN VITAL! Discriminamos por rol
+        if user.role == 'professional':
+            # Si es profesional, devolvemos las citas donde él es el profesional
+            # IMPORTANTE: Queremos ver TODAS (incluidas las canceladas) en el panel
+            return Booking.objects.filter(professional=user).order_by('-booking_date', 'start_time')
+        else:
+            # Si es cliente, devolvemos las citas que ha reservado
+            return Booking.objects.filter(client=user).order_by('-booking_date', 'start_time')
+
+    # 2. EL TRUCO PARA LIBERAR HUECOS CANCELADOS
+    @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
+    def ocupadas(self, request):
+        """
+        Endpoint que usa el Frontend en el Checkout para saber qué horas bloquear.
+        Ejemplo de URL: /api/bookings/citas/ocupadas/?profesional=1&fecha=2026-04-24
+        """
+        profesional_id = request.query_params.get('profesional')
+        fecha = request.query_params.get('fecha')
+
+        if not profesional_id or not fecha:
+            return Response({"error": "Faltan parámetros: profesional y fecha"}, status=400)
+
+        # AQUÍ ESTÁ LA MAGIA: Solo contamos como "ocupadas" las confirmadas o pendientes
+        citas_activas = Booking.objects.filter(
+            professional_id=profesional_id,
+            booking_date=fecha,
+            status__in=['pending', 'confirmed'] # ¡Las canceladas quedan excluidas y el hueco libre!
+        )
+        
+        serializer = self.get_serializer(citas_activas, many=True)
+        return Response(serializer.data)
+
 
 # El resto de ViewSets puedes dejarlos como están:
 class ServiceViewSet(viewsets.ModelViewSet):
