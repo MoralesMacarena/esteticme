@@ -14,15 +14,17 @@ class BookingSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
+    client_name = serializers.ReadOnlyField(source='client.full_name')
+
     class Meta:
         model = Booking
         # 2. Especificamos qué campos queremos manejar. 
         # Quitamos 'client' y 'end_time' porque los calculamos en el servidor.
         fields = [
             'id', 'professional', 'booking_date', 
-            'start_time', 'total_price', 'status', 'service_ids'
+            'start_time', 'total_price', 'status', 'service_ids', 'client_name'
         ]
-        read_only_fields = ['id', 'status']
+        read_only_fields = ['id', 'status', 'client_name']
 
     def create(self, validated_data):
         # 3. Extraemos los IDs de los servicios antes de crear la reserva

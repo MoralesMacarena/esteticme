@@ -2,12 +2,20 @@ from rest_framework import viewsets
 from .models import CustomUser
 from .serializers import UserSerializer
 from django.db.models import Q
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 # 1. Tu ViewSet original (Ideal para un panel de administración interno)
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
-    # Aquí en el futuro añadiríamos: permission_classes = [IsAdminUser]
+    
+    @action(detail=False, methods=['GET', 'PATCH'], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        # 'request.user' tiene al usuario que ha hecho la petición con su token
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
 
 # 2. EL NUEVO VIEWSET PARA REACT (Público y Seguro)
 class ProfessionalViewSet(viewsets.ReadOnlyModelViewSet):
