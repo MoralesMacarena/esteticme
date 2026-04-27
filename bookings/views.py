@@ -2,8 +2,8 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Service, Booking, Availability, Review
-from .serializers import ServiceSerializer, BookingSerializer, AvailabilitySerializer, ReviewSerializer
+from .models import Service, Booking, Availability, Review, Category
+from .serializers import ServiceSerializer, BookingSerializer, AvailabilitySerializer, ReviewSerializer, CategorySerializer
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -51,13 +51,35 @@ class BookingViewSet(viewsets.ModelViewSet):
 
 # El resto de ViewSets puedes dejarlos como están:
 class ServiceViewSet(viewsets.ModelViewSet):
-    queryset = Service.objects.all()
     serializer_class = ServiceSerializer
+    permission_classes = [IsAuthenticated] # Solo usuarios logueados
+
+    def get_queryset(self):
+        # Filtramos para que solo devuelva los servicios de este profesional
+        return Service.objects.filter(professional=self.request.user)
+
+    def perform_create(self, serializer):
+        # ¡MAGIA!: Cuando el profesional cree un servicio nuevo en React, 
+        # Django le asignará automáticamente su usuario como 'dueño' del servicio.
+        serializer.save(professional=self.request.user)
+
 
 class AvailabilityViewSet(viewsets.ModelViewSet):
-    queryset = Availability.objects.all()
     serializer_class = AvailabilitySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Filtramos para que solo devuelva los horarios de este profesional
+        return Availability.objects.filter(professional=self.request.user)
+
+    def perform_create(self, serializer):
+        # Asigna el usuario automáticamente al crear un horario
+        serializer.save(professional=self.request.user)
 
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet): # Solo lectura para profesionales
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer

@@ -11,6 +11,7 @@ import Signup from "./pages/Signup";
 import SignupBusiness from "./pages/SignupBusiness";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PanelProfesional from "./pages/PanelProfesional";
+import PanelServicios from "./pages/PanelServicios";
 
 export default function App() {
   return (
@@ -48,8 +49,7 @@ export default function App() {
             />
 
             {/* ⚠️ RUTAS EN LA NEVERA (Comentadas hasta que creemos los archivos) ⚠️ */}
-            {
-              /*
+            {/*
             <Route
               path="/perfil"
               element={
@@ -57,17 +57,24 @@ export default function App() {
                   <Perfil />
                 </ProtectedRoute>
               }
-            />*/
-
-              <Route
-                path="/panel"
-                element={
-                  <ProtectedRoute allowedRole="professional">
-                    <PanelProfesional />
-                  </ProtectedRoute>
-                }
-              />
-            }
+            />
+            */}
+            <Route
+              path="/panel"
+              element={
+                <ProtectedRoute allowedRole="professional">
+                  <PanelProfesional />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/panel/servicios"
+              element={
+                <ProtectedRoute allowedRole="professional">
+                  <PanelServicios />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </main>
 
