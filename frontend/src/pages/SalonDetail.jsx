@@ -1,54 +1,40 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 export default function SalonDetail() {
-  const [salon, setSalon] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // 2. NUEVO: Usamos useLocation para leer la "mochila"
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // 3. NUEVO: Inicializamos el estado 'salon' directamente con el que viene en la mochila
+  const [salon, setSalon] = useState(location.state?.salon || null);
+
+  // Como ya tenemos el salón, ya no estamos "cargando" nada desde Django
+  const [loading, setLoading] = useState(!location.state?.salon);
   const [error, setError] = useState(null);
   const [cart, setCart] = useState([]);
 
-  // NUEVO: Estados para controlar la interfaz
-  const [activeTab, setActiveTab] = useState("servicios"); // 'servicios', 'reseñas', 'sobre-nosotros'
-  const [showGallery, setShowGallery] = useState(false); // Controla si se ve la galería a pantalla completa
+  const [activeTab, setActiveTab] = useState("servicios");
+  const [showGallery, setShowGallery] = useState(false);
 
-  const navigate = useNavigate();
-
-  const handleCheckout = () => {
-    // Empaquetamos todos los datos de la reserva
-    const checkoutData = {
-      salon: salon,
-      cart: cart,
-      totalPrice: totalPrice,
-      totalDuration: totalDuration,
-    };
-
-    // Comprobamos si el usuario está logueado (mirando si hay un token guardado)
-    const isAuthenticated = localStorage.getItem("access_token") !== null;
-
-    if (isAuthenticated) {
-      // Si está logueado, va directo al checkout a pagar
-      navigate("/checkout", { state: checkoutData });
-    } else {
-      // Si NO está logueado, lo mandamos al Login, pero le decimos:
-      // "Oye, cuando termines, devuélvelo al /checkout con estos datos"
-      navigate("/login", {
-        state: {
-          returnTo: "/checkout",
-          savedData: checkoutData,
-        },
-      });
-    }
-  };
-
+  // --- 4. MODIFICADO: Solo hacemos fetch SI alguien entra por URL directa sin mochila ---
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/users/salones/")
+    // Si ya tenemos el salón en la mochila, no hacemos nada.
+    if (salon) {
+      setLoading(false);
+      return;
+    }
+
+    // Si NO hay salón en la mochila (ej: recargaron la página), buscamos todos
+    // (Lo ideal sería buscar por ID en la URL, pero esto lo arregla temporalmente)
+    fetch("http://127.0.0.1:8000/api/users/profiles/") // Asegúrate de que el endpoint sea el correcto
       .then((response) => {
         if (!response.ok) throw new Error("Error de red");
         return response.json();
       })
       .then((data) => {
         if (data.length > 0) {
-          setSalon(data[0]);
+          setSalon(data[0]); // Sigue cogiendo el primero solo como emergencia
         } else {
           setError("No hay salones disponibles");
         }
@@ -59,7 +45,29 @@ export default function SalonDetail() {
         setError("Error al cargar la información del salón.");
         setLoading(false);
       });
-  }, []);
+  }, [salon]);
+
+  const handleCheckout = () => {
+    const checkoutData = {
+      salon: salon,
+      cart: cart,
+      totalPrice: totalPrice,
+      totalDuration: totalDuration,
+    };
+
+    const isAuthenticated = localStorage.getItem("access_token") !== null;
+
+    if (isAuthenticated) {
+      navigate("/checkout", { state: checkoutData });
+    } else {
+      navigate("/login", {
+        state: {
+          returnTo: "/checkout",
+          savedData: checkoutData,
+        },
+      });
+    }
+  };
 
   const handleAddToCart = (service) => {
     const isAlreadyInCart = cart.some((item) => item.id === service.id);

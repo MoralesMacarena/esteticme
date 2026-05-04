@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+// NUEVO: Importamos tu componente estrella
+import SalonCard from "../components/SalonCard";
 
 export default function Salones() {
   const [salones, setSalones] = useState([]);
@@ -8,21 +10,17 @@ export default function Salones() {
   const [localSearch, setLocalSearch] = useState("");
   const navigate = useNavigate();
 
-  // NUEVO ESTADO: Controla si vemos la cuadrícula o el mapa
-  const [viewMode, setViewMode] = useState("grid"); // Puede ser "grid" o "map"
+  const [viewMode, setViewMode] = useState("grid");
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const search = params.get("search") || "";
-    // También podríamos sacar la location si la pasamos desde la Home
     const urlLocation = params.get("location") || "";
 
-    // Si hay una ubicación en la URL, la ponemos en el buscador local
     if (urlLocation) setLocalSearch(urlLocation);
 
     setLoading(true);
-    // Idealmente tu backend también debería filtrar por location si se la pasas
-    fetch(`http://127.0.0.1:8000/api/users/salones/?search=${search}`)
+    fetch(`http://127.0.0.1:8000/api/users/salones/?search=${search}`) // Asegúrate de que este sea tu endpoint correcto para buscar
       .then((res) => res.json())
       .then((data) => {
         setSalones(data);
@@ -36,13 +34,12 @@ export default function Salones() {
 
   const handleLocalSearch = (e) => {
     if (e.key === "Enter") {
-      navigate(`/salones?search=${localSearch}`); // O location=${localSearch} según como lo configures en el back
+      navigate(`/salones?search=${localSearch}`);
     }
   };
 
   return (
     <div className="bg-gray-50 flex flex-col min-h-screen font-sans">
-      {/* BARRA DE FILTROS LOCALES */}
       <div className="border-b border-gray-200 bg-white py-4 shadow-sm">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -62,7 +59,6 @@ export default function Salones() {
               </div>
             </div>
 
-            {/* BOTÓN TOGGLE MAPA/LISTA */}
             <button
               onClick={() => setViewMode(viewMode === "grid" ? "map" : "grid")}
               className="flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-[#f48c25]/10 text-[#f48c25] font-bold hover:bg-[#f48c25]/20 transition-colors border border-[#f48c25]/20 whitespace-nowrap w-full sm:w-auto"
@@ -94,9 +90,7 @@ export default function Salones() {
           </div>
         ) : (
           <>
-            {/* RENDERIZADO CONDICIONAL: MAPA VS CUADRÍCULA */}
             {viewMode === "map" ? (
-              /* VISTA DE MAPA */
               <div className="w-full h-[600px] rounded-xl overflow-hidden shadow-md border border-gray-200">
                 <iframe
                   width="100%"
@@ -109,55 +103,12 @@ export default function Salones() {
                 ></iframe>
               </div>
             ) : (
-              /* VISTA DE LISTA (Grid original) */
+              // --- EL GRAN CAMBIO ESTÁ AQUÍ ---
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {salones.length > 0 ? (
                   salones.map((salon) => (
-                    <Link
-                      key={salon.id}
-                      to={`/salones/${salon.id}`}
-                      className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 flex flex-col h-full group"
-                    >
-                      <div className="relative h-48">
-                        <img
-                          className="w-full h-full object-cover"
-                          src={
-                            salon.profile_image ||
-                            "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1000&auto=format&fit=crop"
-                          }
-                          alt={salon.business_name}
-                        />
-                      </div>
-                      <div className="p-4 flex flex-col flex-grow">
-                        <h3 className="text-lg font-bold text-[#181411] mb-1 group-hover:text-[#f48c25] transition-colors">
-                          {salon.business_name}
-                        </h3>
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                          {salon.category_name || "Belleza y Estética"}
-                        </p>
-
-                        <div className="flex items-center gap-1 mb-4">
-                          <span className="material-symbols-outlined text-yellow-500 text-[18px]">
-                            star
-                          </span>
-                          <span className="font-bold text-[#181411]">4.9</span>
-                          <span className="text-sm text-gray-400">
-                            (124 reseñas)
-                          </span>
-                        </div>
-
-                        <div className="mt-auto pt-4 border-t border-gray-100">
-                          <div className="flex items-start gap-2 text-sm text-gray-500">
-                            <span className="material-symbols-outlined text-base mt-0.5 text-[#f48c25]">
-                              location_on
-                            </span>
-                            <span className="line-clamp-2">
-                              {salon.address || "Madrid, España"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
+                    // Y así de limpio queda tu código gracias a la reutilización
+                    <SalonCard key={salon.id} salon={salon} />
                   ))
                 ) : (
                   <div className="col-span-full text-center py-12">

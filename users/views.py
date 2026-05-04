@@ -1,12 +1,28 @@
-from rest_framework import viewsets
-from .models import CustomUser
-from .serializers import UserSerializer
-from django.db.models import Q
+from rest_framework import viewsets, generics, status
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.db.models import Q
+from .models import CustomUser
+from .serializers import CustomTokenObtainPairSerializer, UserSerializer
 
-# 1. Tu ViewSet original (Ideal para un panel de administración interno)
+# 1. VISTA DE REGISTRO (La que faltaba)
+class RegisterView(generics.CreateAPIView):
+    """
+    Permite crear nuevos usuarios (clientes o profesionales).
+    """
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny] # Cualquier persona puede registrarse
+
+# 2. VISTA DE LOGIN (La que faltaba)
+# users/views.py
+class LoginView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer # <-- Añade esta línea
+    permission_classes = [AllowAny]
+
+# 3. Tu ViewSet original (Administración y perfil personal)
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
@@ -17,7 +33,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
-# 2. EL NUEVO VIEWSET PARA REACT (Público y Seguro)
+# 4. VIEWSET PARA REACT (Público y Seguro)
 class ProfessionalViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet para listar salones con capacidad de búsqueda.
@@ -36,7 +52,7 @@ class ProfessionalViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(
                 Q(business_name__icontains=search_query) | 
                 Q(description__icontains=search_query) |
-                Q(services__name__icontains=search_query) # Busca servicios asociados
-            ).distinct() # distinct() evita que salgan duplicados si el texto coincide en varios sitios
+                Q(services__name__icontains=search_query) 
+            ).distinct() 
             
         return queryset

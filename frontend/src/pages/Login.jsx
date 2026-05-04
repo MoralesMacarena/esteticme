@@ -18,12 +18,12 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/token/", {
+      // En tu archivo Login.jsx, dentro de handleLogin:
+      const response = await fetch("http://127.0.0.1:8000/api/users/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        // 2. Aquí enviamos username a Django
         body: JSON.stringify({ username, password }),
       });
 

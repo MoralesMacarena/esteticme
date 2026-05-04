@@ -19,21 +19,32 @@ class ServiceSerializer(serializers.ModelSerializer):
 
 # 3. El Serializer Principal del Usuario/Profesional
 class UserSerializer(serializers.ModelSerializer):
-    services = ServiceSerializer(many=True, read_only=True)
+    # Añadimos password como campo explícito para poder configurarlo
+    password = serializers.CharField(write_only=True)
     
-    # ¡LA NUEVA MAGIA!: Añadimos la galería de imágenes a la lista
-    # Usamos 'gallery_images' porque es el related_name del models.py
+    services = ServiceSerializer(many=True, read_only=True)
     gallery_images = SalonImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = CustomUser
         fields = [
-            'id', 'email', 'full_name', 'role', 'phone', 
+            'id', 'username', 'email', 'password', 'full_name', 'role', 'phone', 
             'business_name', 'business_address', 'description',
             'profile_picture', 'salon_picture',
-            'services',       # Tus servicios
-            'gallery_images'  # <-- Tus nuevas fotos de galería
+            'services', 'gallery_images'
         ]
+
+    def create(self, validated_data):
+        # 1. Extraemos la contraseña antes de crear el usuario
+        password = validated_data.pop('password', None)
+        # 2. Creamos la instancia del usuario
+        instance = self.Meta.model(**validated_data)
+        # 3. Encriptamos la contraseña
+        if password is not None:
+            instance.set_password(password)
+        # 4. Guardamos
+        instance.save()
+        return instance
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):

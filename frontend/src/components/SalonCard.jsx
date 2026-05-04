@@ -13,7 +13,11 @@ export default function SalonCard({ salon }) {
     : "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800";
 
   return (
-    <Link to={`/salones/${salon.id}`} className="block">
+    <Link
+      to={`/salones/${salon.id}`}
+      state={{ salon: salon }}
+      className="block"
+    >
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer">
         <div className="relative h-48 overflow-hidden">
           <img

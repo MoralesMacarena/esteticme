@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Service, Booking, Availability, Review, Category
 from .serializers import ServiceSerializer, BookingSerializer, AvailabilitySerializer, ReviewSerializer, CategorySerializer
+from rest_framework.views import APIView
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -83,3 +84,12 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet): # Solo lectura para profesionales
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+
+class ProfessionalAvailabilityView(APIView):
+    permission_classes = [AllowAny] # Cualquiera puede ver los horarios de un salón
+
+    def get(self, request, professional_id):
+        # Buscamos todos los días que trabaja este profesional
+        availabilities = Availability.objects.filter(professional_id=professional_id)
+        serializer = AvailabilitySerializer(availabilities, many=True)
+        return Response(serializer.data)
