@@ -12,6 +12,7 @@ import SignupBusiness from "./pages/SignupBusiness";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PanelProfesional from "./pages/PanelProfesional";
 import PanelServicios from "./pages/PanelServicios";
+import PanelNegocio from "./pages/PanelNegocio";
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/signup-business" element={<SignupBusiness />} />
             <Route path="/salones" element={<Salones />} />
             <Route path="/salones/:id" element={<SalonDetail />} />
+            <Route path="/panel/perfil" element={<PanelNegocio />} />
 
             {/* RUTAS PROTEGIDAS GENERALES */}
             <Route

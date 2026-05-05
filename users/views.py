@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Q
-from .models import CustomUser
+from .models import CustomUser, SalonImage
 from .serializers import CustomTokenObtainPairSerializer, UserSerializer
 
 # 1. VISTA DE REGISTRO (La que faltaba)
@@ -29,9 +29,31 @@ class UserViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['GET', 'PATCH'], permission_classes=[IsAuthenticated])
     def me(self, request):
-        # 'request.user' tiene al usuario que ha hecho la petición con su token
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+        user = request.user
+
+        # SI ES GET: Solo devolvemos los datos
+        if request.method == 'GET':
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+
+        # SI ES PATCH: Guardamos los cambios y las fotos
+        elif request.method == 'PATCH':
+            # 1. Guardamos el texto y la foto principal
+            serializer = self.get_serializer(user, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                user = serializer.save()
+                
+                # 2. ¡LA MAGIA! Atrapamos TODAS las fotos de la galería
+                gallery_files = request.FILES.getlist('gallery_images')
+                
+                # 3. Guardamos cada foto extra en el modelo SalonImage
+                for image in gallery_files:
+                    SalonImage.objects.create(professional=user, image=image)
+                    
+                return Response(serializer.data)
+                
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # 4. VIEWSET PARA REACT (Público y Seguro)
 class ProfessionalViewSet(viewsets.ReadOnlyModelViewSet):

@@ -26,7 +26,7 @@ class BookingSerializer(serializers.ModelSerializer):
             'id', 'professional', 'booking_date', 
             'start_time', 'total_price', 'status', 'service_ids', 'client_name'
         ]
-        read_only_fields = ['id', 'status', 'client_name']
+        read_only_fields = ['id', 'client_name']
 
     # --- NUESTRO NUEVO PORTERO DE DISCOTECA ---
     def validate(self, data):
