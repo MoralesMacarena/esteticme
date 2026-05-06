@@ -2,14 +2,10 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
 export default function SalonDetail() {
-  // 2. NUEVO: Usamos useLocation para leer la "mochila"
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 3. NUEVO: Inicializamos el estado 'salon' directamente con el que viene en la mochila
   const [salon, setSalon] = useState(location.state?.salon || null);
-
-  // Como ya tenemos el salón, ya no estamos "cargando" nada desde Django
   const [loading, setLoading] = useState(!location.state?.salon);
   const [error, setError] = useState(null);
   const [cart, setCart] = useState([]);
@@ -17,24 +13,22 @@ export default function SalonDetail() {
   const [activeTab, setActiveTab] = useState("servicios");
   const [showGallery, setShowGallery] = useState(false);
 
-  // --- 4. MODIFICADO: Solo hacemos fetch SI alguien entra por URL directa sin mochila ---
+  const BACKEND_URL = "http://127.0.0.1:8000";
+
   useEffect(() => {
-    // Si ya tenemos el salón en la mochila, no hacemos nada.
     if (salon) {
       setLoading(false);
       return;
     }
 
-    // Si NO hay salón en la mochila (ej: recargaron la página), buscamos todos
-    // (Lo ideal sería buscar por ID en la URL, pero esto lo arregla temporalmente)
-    fetch("http://127.0.0.1:8000/api/users/profiles/") // Asegúrate de que el endpoint sea el correcto
+    fetch(`${BACKEND_URL}/api/users/profiles/`)
       .then((response) => {
         if (!response.ok) throw new Error("Error de red");
         return response.json();
       })
       .then((data) => {
         if (data.length > 0) {
-          setSalon(data[0]); // Sigue cogiendo el primero solo como emergencia
+          setSalon(data[0]);
         } else {
           setError("No hay salones disponibles");
         }
@@ -98,12 +92,31 @@ export default function SalonDetail() {
     );
   }
 
-  const groupedServices = salon.services.reduce((acc, service) => {
-    if (!acc[service.category_name]) acc[service.category_name] = [];
-    acc[service.category_name].push(service);
-    return acc;
-  }, {});
+  const groupedServices =
+    salon.services?.reduce((acc, service) => {
+      if (!acc[service.category_name]) acc[service.category_name] = [];
+      acc[service.category_name].push(service);
+      return acc;
+    }, {}) || {};
 
+  // --- ARREGLO DE IMÁGENES ---
+  const getFullImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith("http")) return imagePath;
+    return `${BACKEND_URL}${imagePath}`;
+  };
+
+  // 1. Recopilamos todas las fotos reales del salón (Principal + Galería)
+  const realImages = [];
+  if (salon.salon_picture)
+    realImages.push(getFullImageUrl(salon.salon_picture));
+  if (salon.gallery_images && salon.gallery_images.length > 0) {
+    salon.gallery_images.forEach((img) =>
+      realImages.push(getFullImageUrl(img.image)),
+    );
+  }
+
+  // 2. Fotos por defecto por si el salón no ha subido suficientes
   const defaultImages = [
     "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1000&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?q=80&w=600",
@@ -112,10 +125,17 @@ export default function SalonDetail() {
     "https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?q=80&w=600",
   ];
 
-  const displayImages =
-    salon.gallery_images.length > 0
-      ? salon.gallery_images.map((img) => `http://127.0.0.1:8000${img.image}`)
-      : defaultImages;
+  // 3. Array final para los 5 huecos de la cabecera
+  const headerImages = [
+    realImages[0] || defaultImages[0],
+    realImages[1] || defaultImages[1],
+    realImages[2] || defaultImages[2],
+    realImages[3] || defaultImages[3],
+    realImages[4] || defaultImages[4],
+  ];
+
+  // 4. Array para el Modal a pantalla completa
+  const modalImages = realImages.length > 0 ? realImages : defaultImages;
 
   const totalPrice = cart.reduce(
     (sum, item) => sum + parseFloat(item.price),
@@ -135,44 +155,43 @@ export default function SalonDetail() {
             <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[350px] rounded-xl overflow-hidden">
               <div className="col-span-2 row-span-2 relative group">
                 <img
-                  src={displayImages[0] || defaultImages[0]}
+                  src={headerImages[0]}
                   className="w-full h-full object-cover"
                   alt="Principal"
                 />
               </div>
               <div className="col-span-1 row-span-1">
                 <img
-                  src={displayImages[1] || defaultImages[1]}
+                  src={headerImages[1]}
                   className="w-full h-full object-cover"
                   alt="Interior 1"
                 />
               </div>
               <div className="col-span-1 row-span-1">
                 <img
-                  src={displayImages[2] || defaultImages[2]}
+                  src={headerImages[2]}
                   className="w-full h-full object-cover"
                   alt="Interior 2"
                 />
               </div>
               <div className="col-span-1 row-span-1">
                 <img
-                  src={displayImages[3] || defaultImages[3]}
+                  src={headerImages[3]}
                   className="w-full h-full object-cover"
                   alt="Detalle"
                 />
               </div>
-              {/* NUEVO: Al hacer clic aquí, mostramos el modal de la galería */}
               <div
                 className="col-span-1 row-span-1 relative cursor-pointer group"
                 onClick={() => setShowGallery(true)}
               >
                 <img
-                  src={displayImages[4] || defaultImages[4]}
+                  src={headerImages[4]}
                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
                   alt="Más fotos"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold text-sm hover:bg-black/40 transition-colors">
-                  Ver todas ({displayImages.length})
+                  Ver todas ({modalImages.length})
                 </div>
               </div>
             </div>
@@ -207,7 +226,6 @@ export default function SalonDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8 relative">
           {/* --- COLUMNA IZQUIERDA: PESTAÑAS Y CONTENIDO --- */}
           <div className="flex-1">
-            {/* NUEVO: Menú de pestañas funcional */}
             <div className="flex gap-8 border-b border-gray-200 mb-6">
               <button
                 onClick={() => setActiveTab("servicios")}
@@ -388,7 +406,7 @@ export default function SalonDetail() {
 
               <button
                 disabled={cart.length === 0}
-                onClick={handleCheckout} // <-- AQUÍ LA MAGIA
+                onClick={handleCheckout}
                 className={`flex items-center justify-center w-full h-12 font-bold rounded-lg transition-colors shadow-sm mb-3 ${cart.length === 0 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#f48c25] text-white hover:bg-orange-600"}`}
               >
                 {cart.length === 0
@@ -406,7 +424,6 @@ export default function SalonDetail() {
       {/* NUEVO: Modal de la Galería a Pantalla Completa */}
       {showGallery && (
         <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col p-4 sm:p-8 overflow-y-auto">
-          {/* Botón de cerrar fijo arriba a la derecha */}
           <div className="flex justify-end sticky top-0 z-10 mb-4">
             <button
               onClick={() => setShowGallery(false)}
@@ -418,9 +435,8 @@ export default function SalonDetail() {
             </button>
           </div>
 
-          {/* Cuadrícula con todas las fotos */}
           <div className="max-w-6xl mx-auto w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12">
-            {displayImages.map((img, idx) => (
+            {modalImages.map((img, idx) => (
               <div
                 key={idx}
                 className="aspect-square rounded-xl overflow-hidden bg-gray-900 border border-gray-800"

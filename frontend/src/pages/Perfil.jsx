@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import PanelProfesional from "./PanelProfesional"; // El de tu captura
-import PanelCliente from "./PanelCliente"; // El de las citas del cliente
+import PanelProfesional from "./PanelProfesional";
+import PanelCliente from "./PanelCliente";
 
 export default function Perfil() {
   const [userData, setUserData] = useState(null);
@@ -8,19 +8,35 @@ export default function Perfil() {
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    fetch("http://127.0.0.1:8000/api/users/profile/me/", {
+    // Añadimos la 's' a profiles para que coincida con tu backend
+    fetch("http://127.0.0.1:8000/api/users/profiles/me/", {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Error de autenticación");
+        return res.json();
+      })
       .then((data) => {
         setUserData(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        // Si hay error (token caducado, etc), dejamos de cargar
+        setLoading(false);
+      });
   }, []);
 
-  if (loading) return <p>Cargando...</p>;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="animate-pulse font-bold text-gray-500">Cargando...</p>
+      </div>
+    );
 
-  // Si el usuario es profesional, cargamos el panel de la captura
-  return userData?.is_professional ? <PanelProfesional /> : <PanelCliente />;
+  // Comparamos usando el campo 'role' que configuramos en tu Django
+  return userData?.role === "professional" ? (
+    <PanelProfesional />
+  ) : (
+    <PanelCliente />
+  );
 }

@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 export default function PanelNegocio() {
-  // 1. ESTADOS PARA LOS TEXTOS
+  const BACKEND_URL = "http://127.0.0.1:8000";
+
+  // 1. ESTADOS TEXTOS
   const [formData, setFormData] = useState({
     business_name: "",
     business_address: "",
@@ -10,30 +12,31 @@ export default function PanelNegocio() {
     description: "",
   });
 
-  // 2. ESTADOS PARA LA FOTO PRINCIPAL
+  // 2. ESTADOS FOTO PRINCIPAL
   const [selectedImage, setSelectedImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [removeMainImage, setRemoveMainImage] = useState(false);
 
-  // 3. ESTADOS PARA LA GALERÍA
-  const [galleryImages, setGalleryImages] = useState([]);
-  const [galleryPreviews, setGalleryPreviews] = useState([]);
+  // 3. ESTADOS GALERÍA (¡La magia para borrar y subir a la vez!)
+  const [existingGallery, setExistingGallery] = useState([]); // Fotos de la BBDD
+  const [imagesToDelete, setImagesToDelete] = useState([]); // IDs de fotos a borrar en BBDD
 
-  // 4. ESTADOS DE LA UI
+  const [newGalleryFiles, setNewGalleryFiles] = useState([]); // Archivos nuevos seleccionados
+  const [newGalleryPreviews, setNewGalleryPreviews] = useState([]); // Previews locales
+
+  // 4. ESTADOS UI
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // <-- ¡NUEVO ESTADO PARA EL MODAL!
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // CARGAR DATOS AL INICIO
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem("access_token");
       try {
-        const response = await fetch(
-          "http://127.0.0.1:8000/api/users/profiles/me/",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        const response = await fetch(`${BACKEND_URL}/api/users/profiles/me/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
         if (response.ok) {
           const data = await response.json();
           setFormData({
@@ -42,7 +45,25 @@ export default function PanelNegocio() {
             phone: data.phone || "",
             description: data.description || "",
           });
-          if (data.salon_picture) setPreviewImage(data.salon_picture);
+
+          // Foto principal (arreglamos la ruta)
+          if (data.salon_picture) {
+            const imageUrl = data.salon_picture.startsWith("http")
+              ? data.salon_picture
+              : `${BACKEND_URL}${data.salon_picture}`;
+            setPreviewImage(imageUrl);
+          }
+
+          // Galería existente (arreglamos las rutas)
+          if (data.gallery_images && Array.isArray(data.gallery_images)) {
+            const formattedGallery = data.gallery_images.map((img) => ({
+              id: img.id,
+              url: img.image.startsWith("http")
+                ? img.image
+                : `${BACKEND_URL}${img.image}`,
+            }));
+            setExistingGallery(formattedGallery);
+          }
         }
       } catch (error) {
         console.error("Error:", error);
@@ -53,33 +74,50 @@ export default function PanelNegocio() {
     fetchProfile();
   }, []);
 
+  // --- HANDLERS FOTO PRINCIPAL ---
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedImage(file);
       setPreviewImage(URL.createObjectURL(file));
+      setRemoveMainImage(false);
     }
   };
 
-  const handleGalleryChange = (e) => {
+  const handleRemoveMainPhoto = () => {
+    setSelectedImage(null);
+    setPreviewImage(null);
+    setRemoveMainImage(true);
+  };
+
+  // --- HANDLERS GALERÍA ---
+  // Borrar foto que ya existe en la base de datos
+  const handleRemoveExistingImage = (imageId) => {
+    setImagesToDelete([...imagesToDelete, imageId]);
+    setExistingGallery(existingGallery.filter((img) => img.id !== imageId));
+  };
+
+  // Añadir fotos nuevas
+  const handleAddGalleryImages = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
-      setGalleryImages((prev) => [...prev, ...files]);
+      setNewGalleryFiles((prev) => [...prev, ...files]);
       const newPreviews = files.map((file) => URL.createObjectURL(file));
-      setGalleryPreviews((prev) => [...prev, ...newPreviews]);
+      setNewGalleryPreviews((prev) => [...prev, ...newPreviews]);
     }
   };
 
-  const removeGalleryImage = (indexToRemove) => {
-    setGalleryImages((prev) =>
+  // Borrar foto nueva antes de guardarla
+  const handleRemoveNewImage = (indexToRemove) => {
+    setNewGalleryFiles((prev) =>
       prev.filter((_, index) => index !== indexToRemove),
     );
-    setGalleryPreviews((prev) =>
+    setNewGalleryPreviews((prev) =>
       prev.filter((_, index) => index !== indexToRemove),
     );
   };
 
-  // ENVIAR TODO AL SERVIDOR
+  // --- SUBMIT ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -91,28 +129,50 @@ export default function PanelNegocio() {
     data.append("phone", formData.phone);
     data.append("description", formData.description);
 
+    // Foto principal
     if (selectedImage) {
       data.append("salon_picture", selectedImage);
+    } else if (removeMainImage) {
+      data.append("salon_picture", "");
     }
 
-    galleryImages.forEach((image) => {
+    // Galería: Fotos nuevas a subir
+    newGalleryFiles.forEach((image) => {
       data.append("gallery_images", image);
     });
 
+    // Galería: IDs de fotos antiguas a borrar
+    imagesToDelete.forEach((id) => {
+      data.append("delete_gallery_images", id);
+    });
+
     try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/api/users/profiles/me/",
-        {
-          method: "PATCH",
-          headers: { Authorization: `Bearer ${token}` },
-          body: data,
-        },
-      );
+      const response = await fetch(`${BACKEND_URL}/api/users/profiles/me/`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        body: data,
+      });
+
       if (response.ok) {
-        // En lugar del alert, abrimos nuestro modal bonito
+        const responseData = await response.json();
+
         setShowSuccessModal(true);
-        setGalleryImages([]);
-        setGalleryPreviews([]);
+        // Limpiar estados de guardado
+        setNewGalleryFiles([]);
+        setNewGalleryPreviews([]);
+        setImagesToDelete([]);
+        setRemoveMainImage(false);
+
+        // Actualizar la galería existente con lo que devuelve el servidor
+        if (responseData.gallery_images) {
+          const formattedGallery = responseData.gallery_images.map((img) => ({
+            id: img.id,
+            url: img.image.startsWith("http")
+              ? img.image
+              : `${BACKEND_URL}${img.image}`,
+          }));
+          setExistingGallery(formattedGallery);
+        }
       } else {
         alert("Hubo un error al guardar los datos.");
       }
@@ -133,7 +193,7 @@ export default function PanelNegocio() {
           to="/panel"
           className="text-sm font-bold text-gray-500 hover:text-[#f48c25] flex items-center gap-1 mb-6 w-fit"
         >
-          <span className="material-symbols-outlined text-sm">arrow_back</span>{" "}
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
           Volver al Panel Principal
         </Link>
 
@@ -143,15 +203,27 @@ export default function PanelNegocio() {
           onSubmit={handleSubmit}
           className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-8"
         >
-          {/* FOTO PRINCIPAL DEL SALÓN */}
+          {/* FOTO PRINCIPAL */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-8 border-b border-gray-100">
-            <div className="size-32 rounded-2xl bg-gray-100 overflow-hidden border-2 border-dashed border-gray-300 flex items-center justify-center shrink-0">
+            <div className="size-32 rounded-2xl bg-gray-100 overflow-hidden border-2 border-dashed border-gray-300 flex items-center justify-center shrink-0 relative group">
               {previewImage ? (
-                <img
-                  src={previewImage}
-                  className="w-full h-full object-cover"
-                  alt="Perfil del Salón"
-                />
+                <>
+                  <img
+                    src={previewImage}
+                    className="w-full h-full object-cover"
+                    alt="Perfil del Salón"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveMainPhoto}
+                    className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Eliminar foto"
+                  >
+                    <span className="material-symbols-outlined text-3xl">
+                      delete
+                    </span>
+                  </button>
+                </>
               ) : (
                 <span className="material-symbols-outlined text-gray-400 text-4xl">
                   storefront
@@ -177,15 +249,15 @@ export default function PanelNegocio() {
             </div>
           </div>
 
-          {/* GALERÍA DE FOTOS */}
+          {/* GALERÍA COMPLETA */}
           <div className="pb-8 border-b border-gray-100">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="font-bold text-lg text-[#181411]">
                   Galería de Trabajos
                 </h3>
                 <p className="text-xs text-gray-500">
-                  Añade fotos de tus mejores cortes o de tu local.
+                  Muestra tu local y tus mejores servicios.
                 </p>
               </div>
               <label className="bg-gray-100 text-[#181411] border border-gray-300 px-4 py-2 rounded-lg text-sm font-bold cursor-pointer hover:bg-gray-200 transition-colors">
@@ -195,47 +267,97 @@ export default function PanelNegocio() {
                   className="hidden"
                   accept="image/*"
                   multiple
-                  onChange={handleGalleryChange}
+                  onChange={handleAddGalleryImages}
                 />
               </label>
             </div>
 
-            {/* Grid de previsualización de la galería */}
-            {galleryPreviews.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-                {galleryPreviews.map((preview, index) => (
-                  <div
-                    key={index}
-                    className="relative aspect-square rounded-xl overflow-hidden group border border-gray-200"
-                  >
-                    <img
-                      src={preview}
-                      alt={`Preview Galería ${index}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeGalleryImage(index)}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-md"
-                    >
-                      <span className="material-symbols-outlined text-sm">
-                        close
-                      </span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {galleryPreviews.length === 0 && (
-              <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
-                <span className="material-symbols-outlined text-gray-400 text-3xl mb-2">
-                  photo_library
-                </span>
-                <p className="text-sm font-medium text-gray-500">
-                  No hay fotos nuevas en la galería
+            {/* FOTOS ACTUALES DE LA BASE DE DATOS */}
+            {existingGallery.length > 0 && (
+              <div className="mb-6">
+                <p className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#f48c25] text-lg">
+                    cloud_done
+                  </span>
+                  Fotos Públicas ({existingGallery.length})
                 </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {existingGallery.map((img) => (
+                    <div
+                      key={img.id}
+                      className="relative aspect-square rounded-xl overflow-hidden group border border-gray-200"
+                    >
+                      <img
+                        src={img.url}
+                        alt={`Galería ${img.id}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExistingImage(img.id)}
+                        className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined text-white text-3xl mb-1">
+                          delete
+                        </span>
+                        <span className="text-white text-xs font-bold">
+                          Borrar
+                        </span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
+
+            {/* FOTOS NUEVAS PENDIENTES DE GUARDAR */}
+            {newGalleryPreviews.length > 0 && (
+              <div className="mt-6 p-4 bg-orange-50 border border-orange-100 rounded-xl">
+                <p className="text-sm font-bold text-[#f48c25] mb-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-lg">
+                    upload
+                  </span>
+                  Nuevas fotos pendientes de guardar (
+                  {newGalleryPreviews.length})
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {newGalleryPreviews.map((preview, index) => (
+                    <div
+                      key={index}
+                      className="relative aspect-square rounded-xl overflow-hidden group border-2 border-dashed border-[#f48c25]"
+                    >
+                      <img
+                        src={preview}
+                        alt={`Preview Nueva ${index}`}
+                        className="w-full h-full object-cover opacity-80"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveNewImage(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-100 shadow-md flex items-center justify-center"
+                      >
+                        <span className="material-symbols-outlined text-sm">
+                          close
+                        </span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {existingGallery.length === 0 &&
+              newGalleryPreviews.length === 0 && (
+                <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
+                  <span className="material-symbols-outlined text-gray-400 text-3xl mb-2">
+                    photo_library
+                  </span>
+                  <p className="text-sm font-medium text-gray-500">
+                    Tu galería está vacía. Sube algunas fotos para atraer
+                    clientes.
+                  </p>
+                </div>
+              )}
           </div>
 
           {/* CAMPOS DE TEXTO */}
@@ -250,7 +372,7 @@ export default function PanelNegocio() {
                 onChange={(e) =>
                   setFormData({ ...formData, business_name: e.target.value })
                 }
-                className="border border-gray-200 p-3 rounded-xl focus:border-[#f48c25] focus:ring-2 focus:ring-[#f48c25]/20 outline-none transition-all"
+                className="border border-gray-200 p-3 rounded-xl focus:border-[#f48c25] outline-none"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -263,7 +385,7 @@ export default function PanelNegocio() {
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
                 }
-                className="border border-gray-200 p-3 rounded-xl focus:border-[#f48c25] focus:ring-2 focus:ring-[#f48c25]/20 outline-none transition-all"
+                className="border border-gray-200 p-3 rounded-xl focus:border-[#f48c25] outline-none"
               />
             </div>
             <div className="md:col-span-2 flex flex-col gap-2">
@@ -276,7 +398,7 @@ export default function PanelNegocio() {
                 onChange={(e) =>
                   setFormData({ ...formData, business_address: e.target.value })
                 }
-                className="border border-gray-200 p-3 rounded-xl focus:border-[#f48c25] focus:ring-2 focus:ring-[#f48c25]/20 outline-none transition-all"
+                className="border border-gray-200 p-3 rounded-xl focus:border-[#f48c25] outline-none"
               />
             </div>
             <div className="md:col-span-2 flex flex-col gap-2">
@@ -289,7 +411,7 @@ export default function PanelNegocio() {
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="border border-gray-200 p-3 rounded-xl focus:border-[#f48c25] focus:ring-2 focus:ring-[#f48c25]/20 outline-none transition-all resize-none"
+                className="border border-gray-200 p-3 rounded-xl focus:border-[#f48c25] outline-none resize-none"
               />
             </div>
           </div>
@@ -317,8 +439,7 @@ export default function PanelNegocio() {
               ¡Guardado con éxito!
             </h3>
             <p className="text-gray-500 mb-8">
-              Los datos y las fotos de tu negocio se han actualizado
-              correctamente.
+              Tus cambios se han actualizado correctamente.
             </p>
             <button
               onClick={() => setShowSuccessModal(false)}

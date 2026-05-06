@@ -7,7 +7,7 @@ from django.db.models import Q
 from .models import CustomUser, SalonImage
 from .serializers import CustomTokenObtainPairSerializer, UserSerializer
 
-# 1. VISTA DE REGISTRO (La que faltaba)
+# 1. VISTA DE REGISTRO
 class RegisterView(generics.CreateAPIView):
     """
     Permite crear nuevos usuarios (clientes o profesionales).
@@ -16,10 +16,9 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [AllowAny] # Cualquier persona puede registrarse
 
-# 2. VISTA DE LOGIN (La que faltaba)
-# users/views.py
+# 2. VISTA DE LOGIN
 class LoginView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer # <-- Añade esta línea
+    serializer_class = CustomTokenObtainPairSerializer
     permission_classes = [AllowAny]
 
 # 3. Tu ViewSet original (Administración y perfil personal)
@@ -44,14 +43,21 @@ class UserViewSet(viewsets.ModelViewSet):
             if serializer.is_valid():
                 user = serializer.save()
                 
-                # 2. ¡LA MAGIA! Atrapamos TODAS las fotos de la galería
+                # --- ¡LO NUEVO! 2. BORRAMOS LAS FOTOS MARCADAS ---
+                images_to_delete = request.data.getlist('delete_gallery_images')
+                if images_to_delete:
+                    # Añadimos professional=user por seguridad (¡para que nadie borre fotos de otro!)
+                    SalonImage.objects.filter(id__in=images_to_delete, professional=user).delete()
+                
+                # 3. Atrapamos TODAS las fotos de la galería NUEVAS
                 gallery_files = request.FILES.getlist('gallery_images')
                 
-                # 3. Guardamos cada foto extra en el modelo SalonImage
+                # 4. Guardamos cada foto extra en el modelo SalonImage
                 for image in gallery_files:
                     SalonImage.objects.create(professional=user, image=image)
-                    
-                return Response(serializer.data)
+                
+                # Refrescamos los datos para devolverle a React la galería actualizada
+                return Response(self.get_serializer(user).data)
                 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

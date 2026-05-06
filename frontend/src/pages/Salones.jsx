@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-// NUEVO: Importamos tu componente estrella
 import SalonCard from "../components/SalonCard";
 
 export default function Salones() {
@@ -12,6 +11,8 @@ export default function Salones() {
 
   const [viewMode, setViewMode] = useState("grid");
 
+  const BACKEND_URL = "http://127.0.0.1:8000"; // <-- Nuestra ruta salvadora
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const search = params.get("search") || "";
@@ -20,10 +21,23 @@ export default function Salones() {
     if (urlLocation) setLocalSearch(urlLocation);
 
     setLoading(true);
-    fetch(`http://127.0.0.1:8000/api/users/salones/?search=${search}`) // Asegúrate de que este sea tu endpoint correcto para buscar
+    fetch(`${BACKEND_URL}/api/users/salones/?search=${search}`)
       .then((res) => res.json())
       .then((data) => {
-        setSalones(data);
+        // ¡LA MAGIA AQUÍ! Arreglamos las fotos antes de guardarlas en el estado
+        const formattedSalones = data.map((salon) => {
+          let pictureUrl = salon.salon_picture;
+          // Si tiene foto y no empieza por "http", se lo ponemos
+          if (pictureUrl && !pictureUrl.startsWith("http")) {
+            pictureUrl = `${BACKEND_URL}${pictureUrl}`;
+          }
+          return {
+            ...salon,
+            salon_picture: pictureUrl,
+          };
+        });
+
+        setSalones(formattedSalones);
         setLoading(false);
       })
       .catch((err) => {
@@ -103,11 +117,9 @@ export default function Salones() {
                 ></iframe>
               </div>
             ) : (
-              // --- EL GRAN CAMBIO ESTÁ AQUÍ ---
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {salones.length > 0 ? (
                   salones.map((salon) => (
-                    // Y así de limpio queda tu código gracias a la reutilización
                     <SalonCard key={salon.id} salon={salon} />
                   ))
                 ) : (

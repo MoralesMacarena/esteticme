@@ -14,6 +14,7 @@ import PanelProfesional from "./pages/PanelProfesional";
 import PanelServicios from "./pages/PanelServicios";
 import PanelNegocio from "./pages/PanelNegocio";
 import CalendarioProfesional from "./pages/CalendarioProfesional";
+import Perfil from "./pages/Perfil";
 
 export default function App() {
   return (
@@ -55,17 +56,16 @@ export default function App() {
               }
             />
 
-            {/* ⚠️ RUTAS EN LA NEVERA (Comentadas hasta que creemos los archivos) ⚠️ */}
-            {/*
+            {/* ¡RUTA DESCONGELADA Y LISTA PARA USAR! */}
             <Route
               path="/perfil"
               element={
-                <ProtectedRoute allowedRole="client">
+                <ProtectedRoute>
                   <Perfil />
                 </ProtectedRoute>
               }
             />
-            */}
+
             <Route
               path="/panel"
               element={
