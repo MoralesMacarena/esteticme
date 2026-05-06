@@ -13,7 +13,16 @@ export default function CalendarioProfesional() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // ESTADO DEL BUSCADOR DE CLIENTES (NUEVO)
+  // ESTADOS PARA MODAL DE EDICIÓN
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    booking_date: "",
+    start_time: "",
+    status: "",
+  });
+
+  // ESTADO DEL BUSCADOR DE CLIENTES
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -48,7 +57,7 @@ export default function CalendarioProfesional() {
 
   const formatDateForDjango = (date) => date.toISOString().split("T")[0];
 
-  // --- OBTENER DATOS (Citas, Servicios, Clientes y Perfil) ---
+  // --- OBTENER DATOS ---
   const fetchData = async () => {
     const token = localStorage.getItem("access_token");
     try {
@@ -103,7 +112,7 @@ export default function CalendarioProfesional() {
     fetchData();
   }, [currentDate]);
 
-  // --- FILTRAR CLIENTES EN TIEMPO REAL ---
+  // --- FILTRAR CLIENTES ---
   const filteredClients = clientsList.filter(
     (c) =>
       c.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -124,7 +133,6 @@ export default function CalendarioProfesional() {
       status: "confirmed",
     };
 
-    // MAGIA DEL BUSCADOR: Si seleccionó de la lista, manda ID. Si no, manda el texto como nombre manual
     if (formData.client_id) {
       payload.client = parseInt(formData.client_id);
     } else {
@@ -147,7 +155,6 @@ export default function CalendarioProfesional() {
       if (response.ok) {
         setShowNewModal(false);
         setShowSuccessModal(true);
-        // Limpiamos todo al terminar
         setFormData({
           booking_date: "",
           start_time: "",
@@ -158,7 +165,6 @@ export default function CalendarioProfesional() {
         fetchData();
       } else {
         const err = await response.json();
-        console.error("Error del servidor:", err);
         const errorMessage = Object.entries(err)
           .map(([campo, errores]) => `Falla el campo [${campo}]: ${errores}`)
           .join("\n");
@@ -168,6 +174,40 @@ export default function CalendarioProfesional() {
       console.error("Error:", error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // --- ACTUALIZAR CITA EXISTENTE (AHORA CON FECHA Y HORA) ---
+  const handleUpdateBooking = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("access_token");
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/bookings/citas/${selectedBooking.id}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(editFormData),
+        },
+      );
+
+      if (response.ok) {
+        // Actualizamos visualmente sin recargar la página
+        setBookings(
+          bookings.map((b) =>
+            b.id === selectedBooking.id ? { ...b, ...editFormData } : b,
+          ),
+        );
+        setShowEditModal(false);
+      } else {
+        alert("No se pudo actualizar la cita.");
+      }
+    } catch (error) {
+      console.error("Error al actualizar:", error);
     }
   };
 
@@ -182,6 +222,8 @@ export default function CalendarioProfesional() {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case "completed":
+        return "bg-blue-100 border-blue-500 text-blue-800";
       case "confirmed":
         return "bg-green-100 border-green-500 text-green-800";
       case "pending":
@@ -189,7 +231,7 @@ export default function CalendarioProfesional() {
       case "cancelled":
         return "bg-red-50 border-red-300 text-red-500 opacity-60";
       default:
-        return "bg-blue-100 border-blue-500 text-blue-800";
+        return "bg-gray-100 border-gray-500 text-gray-800";
     }
   };
 
@@ -211,8 +253,8 @@ export default function CalendarioProfesional() {
 
   return (
     <div className="bg-white font-display flex flex-col h-screen overflow-hidden relative">
-      {/* CABECERA */}
-      <div className="w-full bg-white border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 z-20 shadow-sm">
+      {/* CABECERA GENERAL */}
+      <div className="w-full bg-white border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 z-40 shadow-sm">
         <div className="flex items-center gap-4">
           <Link
             to="/panel"
@@ -259,115 +301,135 @@ export default function CalendarioProfesional() {
       </div>
 
       {/* ÁREA PRINCIPAL DEL CALENDARIO */}
-      <main className="flex-grow flex overflow-hidden">
-        {/* COLUMNA DE HORAS */}
-        <div className="w-16 flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto pt-12 no-scrollbar z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-20 border-b border-gray-50 pr-2 text-xs text-gray-400 text-right relative"
-            >
-              <span className="-top-3 relative bg-white px-1 font-medium">
-                {9 + i}:00
-              </span>
-            </div>
-          ))}
+      <main className="flex-grow flex flex-col overflow-hidden bg-gray-50 relative">
+        {/* CABECERA DE LOS DÍAS */}
+        <div className="flex border-b border-gray-200 bg-white z-30 shadow-sm pl-16">
+          {weekDays.map((date, index) => {
+            const isToday =
+              formatDateForDjango(date) === formatDateForDjango(new Date());
+            return (
+              <div
+                key={index}
+                className={`flex-1 py-3 text-center border-r border-gray-100 ${isToday ? "bg-orange-50/50" : ""}`}
+              >
+                <span
+                  className={`text-xs uppercase block ${isToday ? "text-[#f48c25] font-bold" : "text-gray-500 font-medium"}`}
+                >
+                  {dayNames[index]}
+                </span>
+                <span
+                  className={`text-xl ${isToday ? "font-black text-[#f48c25]" : "font-bold text-[#181411]"}`}
+                >
+                  {date.getDate()}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
-        {/* ZONA DE DÍAS Y CITAS */}
-        <div className="flex-grow flex flex-col overflow-auto bg-gray-50 relative no-scrollbar">
-          {/* CABECERA DE LOS DÍAS */}
-          <div className="flex border-b border-gray-200 bg-white sticky top-0 z-20 shadow-sm">
-            {weekDays.map((date, index) => {
-              const isToday =
-                formatDateForDjango(date) === formatDateForDjango(new Date());
-              return (
-                <div
-                  key={index}
-                  className={`flex-1 py-3 text-center border-r border-gray-100 ${isToday ? "bg-orange-50/50" : ""}`}
-                >
-                  <span
-                    className={`text-xs uppercase block ${isToday ? "text-[#f48c25] font-bold" : "text-gray-500 font-medium"}`}
-                  >
-                    {dayNames[index]}
-                  </span>
-                  <span
-                    className={`text-xl ${isToday ? "font-black text-[#f48c25]" : "font-bold text-[#181411]"}`}
-                  >
-                    {date.getDate()}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* GRID DE CITAS */}
-          <div className="flex relative h-[960px]">
-            <div className="absolute inset-0 flex flex-col w-full pointer-events-none">
+        {/* ZONA SCROLLABLE UNIFICADA (Horas + Grid) */}
+        <div className="flex-grow overflow-y-auto flex relative no-scrollbar">
+          {/* COLUMNA IZQUIERDA: HORAS */}
+          <div className="w-16 flex-shrink-0 bg-white border-r border-gray-200 relative z-20 pt-8 pb-8">
+            <div className="h-[960px] relative w-full">
               {Array.from({ length: 12 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-20 border-b border-gray-200/50 w-full"
-                ></div>
+                  className="absolute w-full right-2 text-right"
+                  style={{ top: `${i * 80}px` }}
+                >
+                  <span className="text-[11px] text-gray-400 font-bold relative -top-3 bg-white px-1">
+                    {9 + i}:00
+                  </span>
+                </div>
               ))}
             </div>
+          </div>
 
-            {weekDays.map((date, index) => {
-              const dateStr = formatDateForDjango(date);
-              const dayBookings = bookings.filter(
-                (b) => b.booking_date === dateStr,
-              );
+          {/* GRID DERECHO: LÍNEAS Y CITAS */}
+          <div className="flex-grow relative z-10 pt-8 pb-8 flex">
+            <div className="h-[960px] w-full relative flex">
+              {/* FONDO: LÍNEAS HORIZONTALES */}
+              <div className="absolute inset-0 pointer-events-none z-0">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-full border-t border-gray-200/70"
+                    style={{ top: `${i * 80}px` }}
+                  ></div>
+                ))}
+              </div>
 
-              if (index === 6) {
+              {/* COLUMNAS: DÍAS Y CITAS */}
+              {weekDays.map((date, index) => {
+                const dateStr = formatDateForDjango(date);
+                const dayBookings = bookings.filter(
+                  (b) => b.booking_date === dateStr,
+                );
+
+                if (index === 6) {
+                  return (
+                    <div
+                      key={index}
+                      className="flex-1 bg-gray-100/50 relative flex items-center justify-center border-r border-gray-200/50 z-10"
+                    >
+                      <span className="transform -rotate-90 text-gray-300 font-black tracking-widest text-2xl">
+                        CERRADO
+                      </span>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     key={index}
-                    className="flex-1 bg-gray-100/50 relative flex items-center justify-center border-r border-gray-200/50"
+                    className="flex-1 border-r border-gray-200/50 relative group hover:bg-gray-100/50 transition-colors z-10"
                   >
-                    <span className="transform -rotate-90 text-gray-300 font-black tracking-widest text-2xl">
-                      CERRADO
-                    </span>
+                    {dayBookings.map((booking) => {
+                      const topPos = calculateTopPosition(booking.start_time);
+                      const colorClasses = getStatusColor(booking.status);
+
+                      return (
+                        <div
+                          key={booking.id}
+                          onClick={() => {
+                            setSelectedBooking(booking);
+                            // Cargamos los datos actuales en el estado del formulario de edición
+                            setEditFormData({
+                              booking_date: booking.booking_date,
+                              start_time: booking.start_time?.substring(0, 5),
+                              status: booking.status,
+                            });
+                            setShowEditModal(true);
+                          }}
+                          className={`absolute left-1 right-1 border-l-4 rounded-lg p-2 cursor-pointer hover:shadow-md transition-all z-20 hover:scale-[1.02] ${colorClasses}`}
+                          style={{
+                            top: `${topPos}px`,
+                            height: `${DEFAULT_HEIGHT}px`,
+                          }}
+                        >
+                          <p className="text-xs font-bold truncate">
+                            {booking.status === "cancelled"
+                              ? "Cancelada"
+                              : booking.status === "completed"
+                                ? "Terminada"
+                                : "Confirmada"}
+                          </p>
+                          <p className="text-[10px] opacity-80 font-medium">
+                            {booking.start_time?.substring(0, 5)}
+                          </p>
+                          <p className="text-[11px] mt-1 font-bold truncate">
+                            {booking.guest_name ||
+                              booking.client_name ||
+                              "Cliente Presencial"}
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
-              }
-
-              return (
-                <div
-                  key={index}
-                  className="flex-1 border-r border-gray-200/50 relative group hover:bg-gray-100/50 transition-colors"
-                >
-                  {dayBookings.map((booking) => {
-                    const topPos = calculateTopPosition(booking.start_time);
-                    const colorClasses = getStatusColor(booking.status);
-
-                    return (
-                      <div
-                        key={booking.id}
-                        className={`absolute left-1 right-1 border-l-4 rounded-lg p-2 cursor-pointer hover:shadow-md transition-all z-10 hover:scale-[1.02] ${colorClasses}`}
-                        style={{
-                          top: `${topPos}px`,
-                          height: `${DEFAULT_HEIGHT}px`,
-                        }}
-                      >
-                        <p className="text-xs font-bold truncate">
-                          {booking.status === "cancelled"
-                            ? "Cancelada"
-                            : "Confirmada"}
-                        </p>
-                        <p className="text-[10px] opacity-80 font-medium">
-                          {booking.start_time?.substring(0, 5)}
-                        </p>
-                        <p className="text-[11px] mt-1 font-bold truncate">
-                          {booking.guest_name ||
-                            booking.client_name ||
-                            "Cliente Presencial"}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
+              })}
+            </div>
           </div>
         </div>
       </main>
@@ -387,12 +449,10 @@ export default function CalendarioProfesional() {
             </div>
 
             <form onSubmit={handleCreateBooking} className="space-y-4">
-              {/* ZONA DE SELECCIÓN DE CLIENTE (BUSCADOR INTELIGENTE) */}
               <div className="flex flex-col gap-2 relative">
                 <label className="text-sm font-bold text-gray-600">
                   ¿Para quién es la cita?
                 </label>
-
                 <div className="relative">
                   <span className="absolute left-3 top-3 text-gray-400 material-symbols-outlined">
                     search
@@ -404,16 +464,14 @@ export default function CalendarioProfesional() {
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
-                      setFormData({ ...formData, client_id: "" }); // Si escribe, reseteamos el ID del cliente
+                      setFormData({ ...formData, client_id: "" });
                       setShowDropdown(true);
                     }}
                     onFocus={() => setShowDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowDropdown(false), 200)} // Retraso para que dé tiempo a hacer click en la lista
+                    onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                     className="w-full pl-10 border border-gray-200 p-3 rounded-xl focus:border-[#f48c25] outline-none transition-colors"
                   />
                 </div>
-
-                {/* Desplegable Flotante de Resultados */}
                 {showDropdown && searchQuery && filteredClients.length > 0 && (
                   <div className="absolute top-[76px] left-0 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-50">
                     {filteredClients.map((c) => (
@@ -500,7 +558,7 @@ export default function CalendarioProfesional() {
         </div>
       )}
 
-      {/* --- MODAL 2: ÉXITO --- */}
+      {/* --- MODAL 2: ÉXITO NUEVA CITA --- */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
@@ -521,6 +579,96 @@ export default function CalendarioProfesional() {
             >
               Aceptar
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL 3: VER/EDITAR CITA --- */}
+      {showEditModal && selectedBooking && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-black text-[#181411]">
+                Gestionar Cita
+              </h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateBooking}>
+              <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
+                <p className="text-sm text-gray-500 font-bold mb-1">Cliente</p>
+                <p className="text-lg font-bold text-[#181411] mb-4 capitalize">
+                  {selectedBooking.guest_name ||
+                    selectedBooking.client_name ||
+                    "Cliente Presencial"}
+                </p>
+
+                <div className="flex justify-between border-t border-gray-200 pt-3 gap-4">
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 font-bold mb-1">
+                      Fecha
+                    </p>
+                    <input
+                      type="date"
+                      required
+                      value={editFormData.booking_date}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          booking_date: e.target.value,
+                        })
+                      }
+                      className="w-full border border-gray-200 p-2 rounded-lg focus:border-[#f48c25] outline-none text-sm font-medium bg-white"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 font-bold mb-1">Hora</p>
+                    <input
+                      type="time"
+                      required
+                      value={editFormData.start_time}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          start_time: e.target.value,
+                        })
+                      }
+                      className="w-full border border-gray-200 p-2 rounded-lg focus:border-[#f48c25] outline-none text-sm font-medium bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 mb-6">
+                <label className="text-sm font-bold text-gray-600">
+                  Estado de la Cita
+                </label>
+                <select
+                  value={editFormData.status}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, status: e.target.value })
+                  }
+                  className="border border-gray-200 p-3 rounded-xl focus:border-[#f48c25] outline-none bg-white font-bold w-full cursor-pointer hover:bg-gray-50"
+                >
+                  <option value="pending">⏳ Pendiente</option>
+                  <option value="confirmed">👍 Confirmada</option>
+                  <option value="completed">✅ Terminada (Cobrada)</option>
+                  <option value="cancelled">❌ Cancelada</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-[#181411] text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors"
+              >
+                Guardar Cambios
+              </button>
+            </form>
           </div>
         </div>
       )}
