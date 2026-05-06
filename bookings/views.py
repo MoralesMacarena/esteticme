@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from .models import Service, Booking, Availability, Review, Category
 from .serializers import ServiceSerializer, BookingSerializer, AvailabilitySerializer, ReviewSerializer, CategorySerializer
 from rest_framework.views import APIView
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -12,7 +14,16 @@ class BookingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated] 
 
     def perform_create(self, serializer):
-        serializer.save(client=self.request.user)
+        user = self.request.user
+        
+        # Si el que crea la cita es el profesional, lo guardamos tal cual 
+        # (usará el guest_name que le mandemos desde React)
+        if user.role == 'professional':
+            serializer.save()
+            
+        # Si es un cliente normal desde la web, le asignamos su usuario automáticamente
+        else:
+            serializer.save(client=user)
 
     def get_queryset(self):
         user = self.request.user
@@ -48,6 +59,14 @@ class BookingViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(citas_activas, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['GET'])
+    def mis_clientes(self, request):
+        # Buscamos a los usuarios que tengan rol de cliente
+        clientes = User.objects.filter(role='client')
+        # Los devolvemos en una lista limpia
+        data = [{"id": c.id, "nombre": c.full_name, "email": c.email} for c in clientes]
+        return Response(data)
 
 
 # El resto de ViewSets puedes dejarlos como están:

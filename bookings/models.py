@@ -39,11 +39,30 @@ class Booking(models.Model):
         ('cancelled', 'Cancelada'),
     )
 
-    client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='client_bookings')
-    professional = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='professional_bookings')
+    # 1. Añadimos null=True y blank=True para que el cliente web no sea obligatorio
+    client = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='client_bookings', 
+        null=True, 
+        blank=True
+    )
     
-    # --- ¡CAMBIO IMPORTANTE AQUÍ! ---
-    # Cambiamos ForeignKey por ManyToManyField
+    # 2. Añadimos este campo nuevo para las citas manuales/por teléfono
+    guest_name = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        help_text="Nombre para citas sin cuenta web"
+    )
+    
+    professional = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='professional_bookings'
+    )
+    
+    # Hemos dejado solo UNA línea de services (Many-to-Many)
     services = models.ManyToManyField(Service, related_name='bookings')
     
     booking_date = models.DateField()
@@ -54,7 +73,9 @@ class Booking(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Reserva de {self.client.email} el {self.booking_date}"
+        # Prevenimos el error: si hay cliente web mostramos su email, si no, el nombre manual
+        nombre = self.client.email if self.client else self.guest_name
+        return f"Reserva de {nombre} el {self.booking_date}"
 
 class Availability(models.Model):
     DAYS_OF_WEEK = (
@@ -78,18 +99,19 @@ class Availability(models.Model):
     def __str__(self):
         return f"Horario de {self.professional.email} - {self.get_day_of_week_display()}"
 
-
 class Review(models.Model):
     RATING_CHOICES = (
         (1, '⭐ (1/5)'), (2, '⭐⭐ (2/5)'), (3, '⭐⭐⭐ (3/5)'),
         (4, '⭐⭐⭐⭐ (4/5)'), (5, '⭐⭐⭐⭐⭐ (5/5)')
     )
 
-    # Relacionamos la reseña con la reserva (como en tu diagrama)
+    # Relacionamos la reseña con la reserva
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='reviews')
     rating = models.IntegerField(choices=RATING_CHOICES)
     comment = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Reseña de {self.booking.client.email} - Nota: {self.rating}"
+        # Protegemos también las reseñas por si algún cliente sin cuenta dejara una en el futuro
+        nombre = self.booking.client.email if self.booking.client else self.booking.guest_name
+        return f"Reseña de {nombre} - Nota: {self.rating}"

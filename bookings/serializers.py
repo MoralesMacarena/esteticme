@@ -23,10 +23,10 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = [
-            'id', 'professional', 'booking_date', 
-            'start_time', 'total_price', 'status', 'service_ids', 'client_name'
+            'id', 'professional', 'booking_date', 'client',
+            'start_time', 'total_price', 'status', 'service_ids', 'client_name', 'guest_name'
         ]
-        read_only_fields = ['id', 'client_name']
+        read_only_fields = ['id', 'client_name', 'total_price']
 
     # --- NUESTRO NUEVO PORTERO DE DISCOTECA ---
     def validate(self, data):
@@ -75,10 +75,17 @@ class BookingSerializer(serializers.ModelSerializer):
         services = Service.objects.filter(id__in=service_ids)
         total_duration = sum([s.duration_minutes for s in services])
         
+        # --- LÍNEA NUEVA: Sumamos los precios de los servicios ---
+        total_price = sum([s.price for s in services])
+        
         dummy_date = datetime(2000, 1, 1, start_time.hour, start_time.minute)
         end_time = (dummy_date + timedelta(minutes=total_duration)).time()
         
         validated_data['end_time'] = end_time
+        
+        # --- LÍNEA NUEVA: Lo metemos en los datos antes de guardar ---
+        validated_data['total_price'] = total_price 
+        
         booking = Booking.objects.create(**validated_data)
         booking.services.set(services)
         
