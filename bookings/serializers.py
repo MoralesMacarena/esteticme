@@ -13,22 +13,44 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['professional']
 
+# --- AÑADIMOS EL DE RESEÑAS AQUÍ ARRIBA ---
+class ReviewSerializer(serializers.ModelSerializer):
+    # Añadimos un campo "mágico" para sacar el nombre de quien hace la reseña
+    reviewer_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Review
+        fields = ['id', 'booking', 'rating', 'comment', 'created_at', 'reviewer_name']
+        read_only_fields = ['booking', 'created_at']
+
+    def get_reviewer_name(self, obj):
+        # Si tiene cuenta web, mostramos su nombre. Si no, "Cliente Anónimo"
+        if obj.booking.client:
+            return obj.booking.client.full_name or "Cliente"
+        return obj.booking.guest_name or "Cliente Anónimo"
+
+
 class BookingSerializer(serializers.ModelSerializer):
     service_ids = serializers.ListField(
         child=serializers.IntegerField(),
         write_only=True
     )
     client_name = serializers.ReadOnlyField(source='client.full_name')
+    
+    # --- LÍNEAS NUEVAS: Nombre del local y reseñas ---
+    professional_name = serializers.ReadOnlyField(source='professional.business_name')
+    reviews = ReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Booking
         fields = [
-            'id', 'professional', 'booking_date', 'client',
-            'start_time', 'total_price', 'status', 'service_ids', 'client_name', 'guest_name'
+            'id', 'professional', 'professional_name', 'booking_date', 'client',
+            'start_time', 'total_price', 'status', 'service_ids', 'client_name', 
+            'guest_name', 'reviews' # <-- Añadimos 'reviews' aquí
         ]
-        read_only_fields = ['id', 'client_name', 'total_price']
+        read_only_fields = ['id', 'client_name', 'professional_name', 'total_price']
 
-    # --- NUESTRO NUEVO PORTERO DE DISCOTECA ---
+    # --- NUESTRO PORTERO DE DISCOTECA ---
     def validate(self, data):
         professional = data.get('professional')
         booking_date = data.get('booking_date')
@@ -75,7 +97,7 @@ class BookingSerializer(serializers.ModelSerializer):
         services = Service.objects.filter(id__in=service_ids)
         total_duration = sum([s.duration_minutes for s in services])
         
-        # --- LÍNEA NUEVA: Sumamos los precios de los servicios ---
+        # --- Sumamos los precios de los servicios ---
         total_price = sum([s.price for s in services])
         
         dummy_date = datetime(2000, 1, 1, start_time.hour, start_time.minute)
@@ -83,7 +105,7 @@ class BookingSerializer(serializers.ModelSerializer):
         
         validated_data['end_time'] = end_time
         
-        # --- LÍNEA NUEVA: Lo metemos en los datos antes de guardar ---
+        # --- Lo metemos en los datos antes de guardar ---
         validated_data['total_price'] = total_price 
         
         booking = Booking.objects.create(**validated_data)
@@ -91,14 +113,8 @@ class BookingSerializer(serializers.ModelSerializer):
         
         return booking
 
-
 class AvailabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Availability
         fields = '__all__'
         read_only_fields = ['professional']
-
-class ReviewSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = '__all__'

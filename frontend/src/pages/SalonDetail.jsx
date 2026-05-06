@@ -10,87 +10,100 @@ export default function SalonDetail() {
   const [error, setError] = useState(null);
   const [cart, setCart] = useState([]);
 
+  // NUEVO ESTADO PARA LAS RESEÑAS
+  const [reviews, setReviews] = useState([]);
+
   const [activeTab, setActiveTab] = useState("servicios");
   const [showGallery, setShowGallery] = useState(false);
 
   const BACKEND_URL = "http://127.0.0.1:8000";
 
+  // Cargar Salón y sus Reseñas
   useEffect(() => {
-    if (salon) {
-      setLoading(false);
-      return;
-    }
+    const fetchSalonData = async () => {
+      let currentSalon = salon;
 
-    fetch(`${BACKEND_URL}/api/users/profiles/`)
-      .then((response) => {
-        if (!response.ok) throw new Error("Error de red");
-        return response.json();
-      })
-      .then((data) => {
-        if (data.length > 0) {
-          setSalon(data[0]);
-        } else {
-          setError("No hay salones disponibles");
+      // 1. Si no hay salón (entró por URL directa), lo buscamos
+      if (!currentSalon) {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/users/profiles/`);
+          const data = await res.json();
+          if (data.length > 0) {
+            currentSalon = data[0]; // (Sigue como emergencia para el primer salón)
+            setSalon(currentSalon);
+          } else {
+            setError("No hay salones disponibles");
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          setError("Error al cargar la información del salón.");
+          setLoading(false);
+          return;
         }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError("Error al cargar la información del salón.");
-        setLoading(false);
-      });
-  }, [salon]);
+      }
 
-  const handleCheckout = () => {
-    const checkoutData = {
-      salon: salon,
-      cart: cart,
-      totalPrice: totalPrice,
-      totalDuration: totalDuration,
+      // 2. NUEVO: Buscar las reseñas de ESTE salón
+      if (currentSalon && currentSalon.id) {
+        try {
+          const revRes = await fetch(
+            `${BACKEND_URL}/api/bookings/reviews/?profesional=${currentSalon.id}`,
+          );
+          if (revRes.ok) {
+            const revData = await revRes.json();
+            setReviews(
+              Array.isArray(revData) ? revData : revData.results || [],
+            );
+          }
+        } catch (err) {
+          console.error("Error cargando reseñas:", err);
+        }
+      }
+
+      setLoading(false);
     };
 
+    fetchSalonData();
+  }, [salon]);
+
+  // --- CARRITO ---
+  const handleCheckout = () => {
+    const checkoutData = { salon, cart, totalPrice, totalDuration };
     const isAuthenticated = localStorage.getItem("access_token") !== null;
 
     if (isAuthenticated) {
       navigate("/checkout", { state: checkoutData });
     } else {
       navigate("/login", {
-        state: {
-          returnTo: "/checkout",
-          savedData: checkoutData,
-        },
+        state: { returnTo: "/checkout", savedData: checkoutData },
       });
     }
   };
 
   const handleAddToCart = (service) => {
-    const isAlreadyInCart = cart.some((item) => item.id === service.id);
-    if (!isAlreadyInCart) {
+    if (!cart.some((item) => item.id === service.id)) {
       setCart([...cart, service]);
     }
   };
 
-  const handleRemoveFromCart = (serviceId) => {
+  const handleRemoveFromCart = (serviceId) =>
     setCart(cart.filter((item) => item.id !== serviceId));
-  };
 
-  if (loading) {
+  // --- UI CONDICIONALES ---
+  if (loading)
     return (
-      <main className="flex-grow flex items-center justify-center bg-gray-50 min-h-screen">
-        <div className="text-xl font-bold text-gray-500 animate-pulse">
+      <main className="flex-grow flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-xl font-bold text-[#f48c25] animate-pulse">
           Cargando salón...
         </div>
       </main>
     );
-  }
-
-  if (error || !salon) {
+  if (error || !salon)
     return (
-      <main className="flex-grow flex items-center justify-center bg-gray-50 min-h-screen">
+      <main className="flex-grow flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-xl font-bold text-red-500">{error}</div>
       </main>
     );
-  }
 
   const groupedServices =
     salon.services?.reduce((acc, service) => {
@@ -102,30 +115,27 @@ export default function SalonDetail() {
   // --- ARREGLO DE IMÁGENES ---
   const getFullImageUrl = (imagePath) => {
     if (!imagePath) return null;
-    if (imagePath.startsWith("http")) return imagePath;
-    return `${BACKEND_URL}${imagePath}`;
+    return imagePath.startsWith("http")
+      ? imagePath
+      : `${BACKEND_URL}${imagePath}`;
   };
 
-  // 1. Recopilamos todas las fotos reales del salón (Principal + Galería)
   const realImages = [];
   if (salon.salon_picture)
     realImages.push(getFullImageUrl(salon.salon_picture));
-  if (salon.gallery_images && salon.gallery_images.length > 0) {
+  if (salon.gallery_images?.length > 0)
     salon.gallery_images.forEach((img) =>
       realImages.push(getFullImageUrl(img.image)),
     );
-  }
 
-  // 2. Fotos por defecto por si el salón no ha subido suficientes
   const defaultImages = [
-    "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1000",
     "https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?q=80&w=600",
     "https://images.unsplash.com/photo-1522337660859-02fbefca4702?q=80&w=600",
     "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=600",
     "https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?q=80&w=600",
   ];
 
-  // 3. Array final para los 5 huecos de la cabecera
   const headerImages = [
     realImages[0] || defaultImages[0],
     realImages[1] || defaultImages[1],
@@ -133,8 +143,6 @@ export default function SalonDetail() {
     realImages[3] || defaultImages[3],
     realImages[4] || defaultImages[4],
   ];
-
-  // 4. Array para el Modal a pantalla completa
   const modalImages = realImages.length > 0 ? realImages : defaultImages;
 
   const totalPrice = cart.reduce(
@@ -146,10 +154,18 @@ export default function SalonDetail() {
     0,
   );
 
+  // Calcula la nota media para mostrarla (opcional)
+  const averageRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length
+        ).toFixed(1)
+      : 0;
+
   return (
     <>
       <main className="flex-grow bg-gray-50">
-        {/* --- CABECERA --- */}
+        {/* --- CABECERA FOTOS --- */}
         <div className="bg-white pb-6 border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[350px] rounded-xl overflow-hidden">
@@ -190,7 +206,7 @@ export default function SalonDetail() {
                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
                   alt="Más fotos"
                 />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold text-sm hover:bg-black/40 transition-colors">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold text-sm hover:bg-black/40">
                   Ver todas ({modalImages.length})
                 </div>
               </div>
@@ -199,9 +215,20 @@ export default function SalonDetail() {
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-black text-[#181411] mb-2">
-                {salon.business_name}
-              </h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-black text-[#181411]">
+                  {salon.business_name}
+                </h1>
+                {/* Nota Media */}
+                {reviews.length > 0 && (
+                  <div className="flex items-center gap-1 bg-yellow-50 text-yellow-600 px-2 py-1 rounded-lg text-sm font-bold border border-yellow-100">
+                    <span className="material-symbols-outlined text-[16px] filled">
+                      star
+                    </span>
+                    {averageRating} ({reviews.length})
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1 text-gray-600">
                   <span className="material-symbols-outlined text-[18px]">
@@ -224,7 +251,7 @@ export default function SalonDetail() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8 relative">
-          {/* --- COLUMNA IZQUIERDA: PESTAÑAS Y CONTENIDO --- */}
+          {/* --- COLUMNA IZQUIERDA --- */}
           <div className="flex-1">
             <div className="flex gap-8 border-b border-gray-200 mb-6">
               <button
@@ -247,7 +274,7 @@ export default function SalonDetail() {
               </button>
             </div>
 
-            {/* CONTENIDO DE LA PESTAÑA: SERVICIOS */}
+            {/* PESTAÑA: SERVICIOS */}
             {activeTab === "servicios" &&
               Object.keys(groupedServices).map((category) => (
                 <div key={category} className="mb-8">
@@ -306,22 +333,75 @@ export default function SalonDetail() {
                 </div>
               ))}
 
-            {/* CONTENIDO DE LA PESTAÑA: RESEÑAS */}
+            {/* PESTAÑA: RESEÑAS (¡AHORA SÍ!) */}
             {activeTab === "reseñas" && (
-              <div className="bg-white p-8 rounded-xl border border-gray-100 text-center">
-                <span className="material-symbols-outlined text-5xl text-gray-300 mb-3">
-                  star_half
-                </span>
-                <h3 className="text-lg font-bold text-[#181411]">
-                  Aún no hay reseñas
-                </h3>
-                <p className="text-gray-500 text-sm mt-2">
-                  Sé el primero en reservar y dejar tu opinión sobre este salón.
-                </p>
+              <div className="space-y-4">
+                {reviews.length === 0 ? (
+                  <div className="bg-white p-8 rounded-xl border border-gray-100 text-center">
+                    <span className="material-symbols-outlined text-5xl text-gray-300 mb-3">
+                      star_half
+                    </span>
+                    <h3 className="text-lg font-bold text-[#181411]">
+                      Aún no hay reseñas
+                    </h3>
+                    <p className="text-gray-500 text-sm mt-2">
+                      Sé el primero en reservar y dejar tu opinión sobre este
+                      salón.
+                    </p>
+                  </div>
+                ) : (
+                  reviews.map((review) => (
+                    <div
+                      key={review.id}
+                      className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 uppercase">
+                            {review.reviewer_name
+                              ? review.reviewer_name.charAt(0)
+                              : "C"}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-[#181411] leading-none">
+                              {review.reviewer_name}
+                            </h4>
+                            <span className="text-xs text-gray-400">
+                              {new Date(review.created_at).toLocaleDateString(
+                                "es-ES",
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex text-yellow-400">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span
+                              key={star}
+                              className={`material-symbols-outlined text-[18px] ${review.rating >= star ? "filled" : "text-gray-200"}`}
+                              style={{
+                                fontVariationSettings:
+                                  review.rating >= star
+                                    ? "'FILL' 1"
+                                    : "'FILL' 0",
+                              }}
+                            >
+                              star
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="text-gray-600 text-sm mt-2 ml-13 pl-13">
+                          {review.comment}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
-            {/* CONTENIDO DE LA PESTAÑA: SOBRE NOSOTROS */}
+            {/* PESTAÑA: SOBRE NOSOTROS */}
             {activeTab === "sobre-nosotros" && (
               <div className="bg-white p-6 rounded-xl border border-gray-100">
                 <h3 className="text-lg font-bold text-[#181411] mb-4">
@@ -336,7 +416,7 @@ export default function SalonDetail() {
             )}
           </div>
 
-          {/* --- COLUMNA DERECHA: CARRITO --- */}
+          {/* --- COLUMNA DERECHA: CARRITO (Se mantiene intacto) --- */}
           <div className="w-full lg:w-96">
             <div className="sticky top-24 bg-white rounded-xl shadow-lg border border-gray-100 p-6">
               <h3 className="font-bold text-lg mb-4 border-b border-gray-100 pb-2 flex justify-between">
@@ -347,7 +427,6 @@ export default function SalonDetail() {
                   </span>
                 )}
               </h3>
-
               {cart.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center text-gray-500">
                   <span className="material-symbols-outlined text-4xl mb-2 text-gray-300">
@@ -390,7 +469,6 @@ export default function SalonDetail() {
                       </div>
                     ))}
                   </div>
-
                   <div className="bg-gray-50 p-3 rounded-lg mb-6">
                     <div className="flex justify-between text-sm text-gray-500 mb-1">
                       <span>Duración total</span>
@@ -403,7 +481,6 @@ export default function SalonDetail() {
                   </div>
                 </>
               )}
-
               <button
                 disabled={cart.length === 0}
                 onClick={handleCheckout}
@@ -421,7 +498,7 @@ export default function SalonDetail() {
         </div>
       </main>
 
-      {/* NUEVO: Modal de la Galería a Pantalla Completa */}
+      {/* MODAL GALERÍA */}
       {showGallery && (
         <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col p-4 sm:p-8 overflow-y-auto">
           <div className="flex justify-end sticky top-0 z-10 mb-4">
@@ -434,7 +511,6 @@ export default function SalonDetail() {
               </span>
             </button>
           </div>
-
           <div className="max-w-6xl mx-auto w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12">
             {modalImages.map((img, idx) => (
               <div

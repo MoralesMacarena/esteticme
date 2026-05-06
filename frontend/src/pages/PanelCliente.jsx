@@ -27,6 +27,12 @@ export default function PanelCliente() {
   const [rescheduleBooking, setRescheduleBooking] = useState(null);
   const [newDateTime, setNewDateTime] = useState({ date: "", time: "" });
 
+  // 4. NUEVO: Estados para Reseñas
+  const [reviewBooking, setReviewBooking] = useState(null);
+  const [rating, setRating] = useState(5); // Por defecto, somos generosos: 5 estrellas
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewError, setReviewError] = useState("");
+
   const BACKEND_URL = "http://127.0.0.1:8000";
 
   // --- CARGAR DATOS ---
@@ -41,9 +47,7 @@ export default function PanelCliente() {
       try {
         const resProfile = await fetch(
           `${BACKEND_URL}/api/users/profiles/me/`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         if (resProfile.ok) {
           const profileData = await resProfile.json();
@@ -206,6 +210,48 @@ export default function PanelCliente() {
     }
   };
 
+  // --- NUEVO: ACCIÓN PARA ENVIAR RESEÑA ---
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    setReviewError("");
+    const token = localStorage.getItem("access_token");
+
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/api/bookings/citas/${reviewBooking.id}/rate/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ rating: rating, comment: reviewComment }),
+        },
+      );
+
+      if (res.ok) {
+        const updatedBooking = await res.json();
+        // Sustituimos la cita vieja por la nueva que ya tiene la reseña incrustada
+        setBookings(
+          bookings.map((b) => (b.id === reviewBooking.id ? updatedBooking : b)),
+        );
+
+        // Limpiamos los estados
+        setReviewBooking(null);
+        setRating(5);
+        setReviewComment("");
+
+        // ¡Usamos el modal de éxito existente para celebrar!
+        setShowSuccessModal(true);
+      } else {
+        const errData = await res.json();
+        setReviewError(errData.error || "Error al enviar la valoración.");
+      }
+    } catch (error) {
+      setReviewError("Error de red al conectar con el servidor.");
+    }
+  };
+
   // --- UTILIDADES ---
   const getStatusBadge = (status) => {
     switch (status) {
@@ -292,7 +338,6 @@ export default function PanelCliente() {
             <p className="text-gray-500">{user?.email}</p>
           </div>
 
-          {/* BOTÓN ÚNICO DE CONFIGURACIÓN */}
           <div>
             <button
               onClick={() => setShowSettings(true)}
@@ -313,13 +358,21 @@ export default function PanelCliente() {
           <div className="flex border-b border-gray-100">
             <button
               onClick={() => setActiveTab("proximas")}
-              className={`flex-1 py-4 text-sm font-bold transition-colors ${activeTab === "proximas" ? "text-[#f48c25] border-b-2 border-[#f48c25] bg-orange-50/50" : "text-gray-500 hover:text-[#181411] hover:bg-gray-50"}`}
+              className={`flex-1 py-4 text-sm font-bold transition-colors ${
+                activeTab === "proximas"
+                  ? "text-[#f48c25] border-b-2 border-[#f48c25] bg-orange-50/50"
+                  : "text-gray-500 hover:text-[#181411] hover:bg-gray-50"
+              }`}
             >
               Próximas Citas ({proximas.length})
             </button>
             <button
               onClick={() => setActiveTab("historial")}
-              className={`flex-1 py-4 text-sm font-bold transition-colors ${activeTab === "historial" ? "text-[#f48c25] border-b-2 border-[#f48c25] bg-orange-50/50" : "text-gray-500 hover:text-[#181411] hover:bg-gray-50"}`}
+              className={`flex-1 py-4 text-sm font-bold transition-colors ${
+                activeTab === "historial"
+                  ? "text-[#f48c25] border-b-2 border-[#f48c25] bg-orange-50/50"
+                  : "text-gray-500 hover:text-[#181411] hover:bg-gray-50"
+              }`}
             >
               Historial ({historial.length})
             </button>
@@ -413,11 +466,26 @@ export default function PanelCliente() {
                       </div>
                     )}
 
+                    {/* NUEVO: Lógica del botón de reseñas */}
                     {activeTab === "historial" &&
                       booking.status === "completed" && (
-                        <button className="w-full md:w-auto mt-2 md:mt-0 bg-white border-2 border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-bold hover:border-[#181411] hover:text-[#181411] transition-colors">
-                          Valorar visita
-                        </button>
+                        <div className="w-full md:w-auto mt-2 md:mt-0">
+                          {booking.reviews && booking.reviews.length > 0 ? (
+                            <div className="flex items-center justify-center gap-1.5 bg-yellow-50 text-yellow-600 px-5 py-2.5 rounded-xl text-sm font-bold border border-yellow-100">
+                              <span className="material-symbols-outlined text-[18px] filled">
+                                star
+                              </span>
+                              Valorada ({booking.reviews[0].rating}/5)
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setReviewBooking(booking)}
+                              className="w-full md:w-auto bg-white border-2 border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-bold hover:border-[#181411] hover:text-[#181411] transition-colors"
+                            >
+                              Valorar visita
+                            </button>
+                          )}
+                        </div>
                       )}
                   </div>
                 ))}
@@ -427,7 +495,9 @@ export default function PanelCliente() {
         </div>
       </div>
 
-      {/* --- MODAL 1: CONFIGURACIÓN DE PERFIL --- */}
+      {/* --- MODALES --- */}
+
+      {/* 1. Modal Ajustes */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
@@ -444,20 +514,16 @@ export default function PanelCliente() {
                 </span>
               </button>
             </div>
-
             <div className="p-6 overflow-y-auto">
               <form onSubmit={handleSaveSettings} className="space-y-5">
-                {/* MOSTRAR ERRORES */}
                 {errorMsg && (
-                  <div className="bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-in slide-in-from-top-2">
+                  <div className="bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-sm font-medium flex items-center gap-2">
                     <span className="material-symbols-outlined text-lg">
                       error
                     </span>
                     {errorMsg}
                   </div>
                 )}
-
-                {/* SUBIDOR DE FOTO */}
                 <div className="flex flex-col items-center mb-2">
                   <div className="relative size-28 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden mb-2 group cursor-pointer hover:border-[#f48c25] transition-colors">
                     {previewImage ? (
@@ -490,8 +556,6 @@ export default function PanelCliente() {
                     Haz clic para cambiar tu foto
                   </span>
                 </div>
-
-                {/* CAMPOS DE TEXTO CON ICONOS */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">
                     Nombre Completo
@@ -506,12 +570,10 @@ export default function PanelCliente() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, full_name: e.target.value })
                       }
-                      className="w-full border border-gray-200 bg-gray-50 rounded-xl py-3.5 pl-12 pr-4 outline-none focus:bg-white focus:border-[#f48c25] focus:ring-4 focus:ring-[#f48c25]/10 transition-all"
-                      placeholder="Tu nombre real"
+                      className="w-full border border-gray-200 bg-gray-50 rounded-xl py-3.5 pl-12 pr-4 outline-none focus:bg-white focus:border-[#f48c25]"
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">
                     Correo Electrónico
@@ -526,15 +588,13 @@ export default function PanelCliente() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, email: e.target.value })
                       }
-                      className="w-full border border-gray-200 bg-gray-50 rounded-xl py-3.5 pl-12 pr-4 outline-none focus:bg-white focus:border-[#f48c25] focus:ring-4 focus:ring-[#f48c25]/10 transition-all"
-                      placeholder="ejemplo@correo.com"
+                      className="w-full border border-gray-200 bg-gray-50 rounded-xl py-3.5 pl-12 pr-4 outline-none focus:bg-white focus:border-[#f48c25]"
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">
-                    Teléfono (Opcional)
+                    Teléfono
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 material-symbols-outlined text-[20px]">
@@ -546,24 +606,21 @@ export default function PanelCliente() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, phone: e.target.value })
                       }
-                      className="w-full border border-gray-200 bg-gray-50 rounded-xl py-3.5 pl-12 pr-4 outline-none focus:bg-white focus:border-[#f48c25] focus:ring-4 focus:ring-[#f48c25]/10 transition-all"
-                      placeholder="+34 600 000 000"
+                      className="w-full border border-gray-200 bg-gray-50 rounded-xl py-3.5 pl-12 pr-4 outline-none focus:bg-white focus:border-[#f48c25]"
                     />
                   </div>
                 </div>
-
-                {/* BOTONERA: CANCELAR Y GUARDAR */}
                 <div className="flex gap-3 mt-8">
                   <button
                     type="button"
                     onClick={() => setShowSettings(false)}
-                    className="flex-1 py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors shadow-sm"
+                    className="flex-1 py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-4 bg-[#f48c25] text-white font-black rounded-xl hover:bg-orange-600 transition-colors shadow-md flex justify-center items-center gap-2"
+                    className="flex-1 py-4 bg-[#f48c25] text-white font-black rounded-xl hover:bg-orange-600 flex justify-center items-center gap-2"
                   >
                     <span className="material-symbols-outlined">save</span>
                     Guardar
@@ -575,7 +632,7 @@ export default function PanelCliente() {
         </div>
       )}
 
-      {/* --- MODAL 1.5: ¡ÉXITO! --- */}
+      {/* 2. Modal Éxito (Lo reutilizamos tanto para perfil como para reseñas) */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-in zoom-in-95">
@@ -585,10 +642,10 @@ export default function PanelCliente() {
               </span>
             </div>
             <h3 className="text-2xl font-black text-[#181411] mb-2">
-              ¡Perfil Actualizado!
+              ¡Todo listo!
             </h3>
             <p className="text-gray-500 mb-8">
-              Tus datos y foto se han guardado correctamente.
+              Los cambios se han guardado correctamente.
             </p>
             <button
               onClick={() => setShowSuccessModal(false)}
@@ -600,7 +657,7 @@ export default function PanelCliente() {
         </div>
       )}
 
-      {/* --- MODAL 2 Y 3: (REPROGRAMAR Y CANCELAR) --- */}
+      {/* 3. Modal Reprogramar */}
       {rescheduleBooking && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm p-8">
@@ -610,9 +667,8 @@ export default function PanelCliente() {
             <h3 className="text-xl font-black text-[#181411] mb-2">
               Reprogramar Cita
             </h3>
-            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-              Selecciona una nueva fecha. El salón revisará el cambio y te
-              confirmará la nueva hora.
+            <p className="text-sm text-gray-500 mb-6">
+              Selecciona una nueva fecha y hora para proponerle al salón.
             </p>
             <form onSubmit={handleReschedule} className="space-y-4">
               <div>
@@ -627,7 +683,7 @@ export default function PanelCliente() {
                   onChange={(e) =>
                     setNewDateTime({ ...newDateTime, date: e.target.value })
                   }
-                  className="w-full border border-gray-200 bg-gray-50 rounded-xl p-3.5 outline-none focus:bg-white focus:border-[#f48c25] focus:ring-4 focus:ring-[#f48c25]/10 transition-all"
+                  className="w-full border border-gray-200 bg-gray-50 rounded-xl p-3.5 outline-none focus:bg-white focus:border-[#f48c25]"
                 />
               </div>
               <div>
@@ -641,20 +697,20 @@ export default function PanelCliente() {
                   onChange={(e) =>
                     setNewDateTime({ ...newDateTime, time: e.target.value })
                   }
-                  className="w-full border border-gray-200 bg-gray-50 rounded-xl p-3.5 outline-none focus:bg-white focus:border-[#f48c25] focus:ring-4 focus:ring-[#f48c25]/10 transition-all"
+                  className="w-full border border-gray-200 bg-gray-50 rounded-xl p-3.5 outline-none focus:bg-white focus:border-[#f48c25]"
                 />
               </div>
               <div className="flex gap-3 mt-8">
                 <button
                   type="button"
                   onClick={() => setRescheduleBooking(null)}
-                  className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                  className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200"
                 >
                   Volver
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3.5 bg-[#f48c25] text-white font-bold rounded-xl hover:bg-orange-600 transition-colors"
+                  className="flex-1 py-3.5 bg-[#f48c25] text-white font-bold rounded-xl hover:bg-orange-600"
                 >
                   Confirmar
                 </button>
@@ -664,6 +720,7 @@ export default function PanelCliente() {
         </div>
       )}
 
+      {/* 4. Modal Cancelar */}
       {cancelId && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm p-8 text-center">
@@ -675,24 +732,102 @@ export default function PanelCliente() {
             <h3 className="text-2xl font-black text-[#181411] mb-2">
               ¿Cancelar Cita?
             </h3>
-            <p className="text-sm text-gray-500 mb-8 leading-relaxed">
-              Esta acción no se puede deshacer. Perderás la reserva de tu hora y
-              tendrás que volver a pedir cita.
+            <p className="text-sm text-gray-500 mb-8">
+              Esta acción no se puede deshacer. Perderás la reserva de tu hora.
             </p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={handleCancelBooking}
-                className="w-full py-3.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors"
+                className="w-full py-3.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600"
               >
                 Sí, cancelar cita
               </button>
               <button
                 onClick={() => setCancelId(null)}
-                className="w-full py-3.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors"
+                className="w-full py-3.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50"
               >
                 No, mantener mi hora
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. NUEVO: Modal de Reseña */}
+      {reviewBooking && (
+        <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-md p-8 text-center">
+            <h3 className="text-2xl font-black text-[#181411] mb-2">
+              Valorar visita
+            </h3>
+            <p className="text-gray-500 text-sm mb-6">
+              ¿Qué tal fue tu experiencia en{" "}
+              <strong>{reviewBooking.professional_name}</strong>?
+            </p>
+
+            <form onSubmit={handleSubmitReview}>
+              {/* Estrellitas Interactivas */}
+              <div className="flex justify-center gap-2 mb-6">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="focus:outline-none hover:scale-110 transition-transform"
+                  >
+                    <span
+                      className={`material-symbols-outlined text-5xl transition-colors ${rating >= star ? "text-yellow-400 filled" : "text-gray-200"}`}
+                      style={{
+                        fontVariationSettings:
+                          rating >= star ? "'FILL' 1" : "'FILL' 0",
+                      }}
+                    >
+                      star
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-left mb-6">
+                <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">
+                  Cuéntanos más (Opcional)
+                </label>
+                <textarea
+                  rows="3"
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="El corte de pelo fue genial, la atención inmejorable..."
+                  className="w-full border border-gray-200 bg-gray-50 rounded-xl p-4 outline-none focus:bg-white focus:border-[#f48c25] focus:ring-4 focus:ring-[#f48c25]/10 transition-all resize-none"
+                ></textarea>
+              </div>
+
+              {reviewError && (
+                <div className="text-red-500 text-sm font-bold mb-4">
+                  {reviewError}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReviewBooking(null);
+                    setRating(5);
+                    setReviewComment("");
+                    setReviewError("");
+                  }}
+                  className="flex-1 py-3.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3.5 bg-[#181411] text-white font-bold rounded-xl hover:bg-gray-800 transition-colors"
+                >
+                  Enviar reseña
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
