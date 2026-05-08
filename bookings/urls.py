@@ -6,7 +6,9 @@ from .views import (
     AvailabilityViewSet, 
     CategoryViewSet,
     ReviewViewSet,
-    ProfessionalAvailabilityView
+    ProfessionalAvailabilityView,
+    PublicServiceViewSet
+
 )
 
 router = DefaultRouter()
@@ -15,6 +17,7 @@ router.register(r'citas', BookingViewSet, basename='booking')
 router.register(r'disponibilidad', AvailabilityViewSet, basename='availability')
 router.register(r'categorias', CategoryViewSet, basename='category')
 router.register(r'reviews', ReviewViewSet, basename='review')
+router.register(r'tratamientos', PublicServiceViewSet, basename='tratamientos')
 
 urlpatterns = [
     path('', include(router.urls)),

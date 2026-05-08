@@ -56,6 +56,8 @@ class Booking(models.Model):
         null=True, 
         help_text="Nombre para citas sin cuenta web"
     )
+
+    guest_phone = models.CharField(max_length=20, blank=True, null=True)
     
     professional = models.ForeignKey(
         settings.AUTH_USER_MODEL, 

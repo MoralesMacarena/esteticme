@@ -52,10 +52,13 @@ export default function Checkout() {
       // 1. Cogemos el token por si Django se pone estricto
       const token = localStorage.getItem("access_token");
 
-      fetch(`http://127.0.0.1:8000/api/bookings/horarios/${salon.id}/`, {
-        // Le pasamos el token en las cabeceras (si lo tenemos)
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
+      fetch(
+        `http://127.0.0.1:8000/api/bookings/profesionales/${salon.id}/horarios/`,
+        {
+          // Le pasamos el token en las cabeceras (si lo tenemos)
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      )
         .then((res) => {
           if (!res.ok) throw new Error("Error del servidor al pedir horarios");
           return res.json();

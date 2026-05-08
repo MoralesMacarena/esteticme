@@ -1,16 +1,21 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, useParams } from "react-router-dom"; // <-- Añadido useParams
 
 export default function SalonDetail() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { id } = useParams(); // <-- Rescatamos el ID de la URL
 
+  // 1. Iniciamos con lo que haya en state (puede ser null, el salón completo o el mini-salón)
   const [salon, setSalon] = useState(location.state?.salon || null);
-  const [loading, setLoading] = useState(!location.state?.salon);
+
+  // 2. Cargamos si no hay salón, o si existe pero le FALTAN los servicios
+  const [loading, setLoading] = useState(!location.state?.salon?.services);
+
   const [error, setError] = useState(null);
   const [cart, setCart] = useState([]);
 
-  // NUEVO ESTADO PARA LAS RESEÑAS
+  // ESTADO PARA LAS RESEÑAS
   const [reviews, setReviews] = useState([]);
 
   const [activeTab, setActiveTab] = useState("servicios");
@@ -22,28 +27,49 @@ export default function SalonDetail() {
   useEffect(() => {
     const fetchSalonData = async () => {
       let currentSalon = salon;
+      const targetId = id || currentSalon?.id;
 
-      // 1. Si no hay salón (entró por URL directa), lo buscamos
-      if (!currentSalon) {
+      // 3. NUEVA REGLA: Si no hay salón, o si es el "mini-salón" (no tiene services), buscamos el perfil completo
+      if (!currentSalon || !currentSalon.services) {
         try {
-          const res = await fetch(`${BACKEND_URL}/api/users/profiles/`);
-          const data = await res.json();
-          if (data.length > 0) {
-            currentSalon = data[0]; // (Sigue como emergencia para el primer salón)
+          // Intentamos buscar directamente el detalle de ese salón por su ID
+          const res = await fetch(
+            `${BACKEND_URL}/api/users/profiles/${targetId}/`,
+          );
+
+          if (res.ok) {
+            currentSalon = await res.json();
             setSalon(currentSalon);
           } else {
-            setError("No hay salones disponibles");
-            setLoading(false);
-            return;
+            // Fallback por si la ruta de detalle no funciona, buscamos en la lista completa
+            const resList = await fetch(`${BACKEND_URL}/api/users/profiles/`);
+            const dataList = await resList.json();
+            const profiles = Array.isArray(dataList)
+              ? dataList
+              : dataList.results || [];
+
+            // Buscamos el salón que coincida con nuestro ID
+            const foundSalon = profiles.find(
+              (s) => s.id === parseInt(targetId),
+            );
+
+            if (foundSalon) {
+              currentSalon = foundSalon;
+              setSalon(currentSalon);
+            } else {
+              setError("No se ha encontrado la información de este salón.");
+              setLoading(false);
+              return;
+            }
           }
         } catch (err) {
-          setError("Error al cargar la información del salón.");
+          setError("Error de conexión al cargar la información del salón.");
           setLoading(false);
           return;
         }
       }
 
-      // 2. NUEVO: Buscar las reseñas de ESTE salón
+      // 4. Buscar las reseñas de ESTE salón
       if (currentSalon && currentSalon.id) {
         try {
           const revRes = await fetch(
@@ -64,7 +90,10 @@ export default function SalonDetail() {
     };
 
     fetchSalonData();
-  }, [salon]);
+    // Desactivamos el warning de dependencias porque solo queremos que esto se ejecute
+    // cuando cambie el ID de la URL (si el usuario navega a otro salón)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   // --- CARRITO ---
   const handleCheckout = () => {
@@ -94,10 +123,11 @@ export default function SalonDetail() {
     return (
       <main className="flex-grow flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-xl font-bold text-[#f48c25] animate-pulse">
-          Cargando salón...
+          Cargando información del salón...
         </div>
       </main>
     );
+
   if (error || !salon)
     return (
       <main className="flex-grow flex items-center justify-center min-h-screen bg-gray-50">
@@ -333,7 +363,7 @@ export default function SalonDetail() {
                 </div>
               ))}
 
-            {/* PESTAÑA: RESEÑAS (¡AHORA SÍ!) */}
+            {/* PESTAÑA: RESEÑAS */}
             {activeTab === "reseñas" && (
               <div className="space-y-4">
                 {reviews.length === 0 ? (
@@ -416,7 +446,7 @@ export default function SalonDetail() {
             )}
           </div>
 
-          {/* --- COLUMNA DERECHA: CARRITO (Se mantiene intacto) --- */}
+          {/* --- COLUMNA DERECHA: CARRITO --- */}
           <div className="w-full lg:w-96">
             <div className="sticky top-24 bg-white rounded-xl shadow-lg border border-gray-100 p-6">
               <h3 className="font-bold text-lg mb-4 border-b border-gray-100 pb-2 flex justify-between">

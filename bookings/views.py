@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Service, Booking, Availability, Review, Category
-from .serializers import ServiceSerializer, BookingSerializer, AvailabilitySerializer, ReviewSerializer, CategorySerializer
+from .serializers import PublicServiceSerializer, ServiceSerializer, BookingSerializer, AvailabilitySerializer, ReviewSerializer, CategorySerializer
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
 
@@ -46,7 +46,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['GET'])
     def mis_clientes(self, request):
         clientes = User.objects.filter(role='client')
-        data = [{"id": c.id, "nombre": c.full_name, "email": c.email} for c in clientes]
+        data = [{"id": c.id, "nombre": c.full_name, "email": c.email, "phone": c.phone} for c in clientes]
         return Response(data)
 
     # --- NUEVA ACCIÓN PARA VALORAR CITAS ---
@@ -124,3 +124,12 @@ class ProfessionalAvailabilityView(APIView):
         availabilities = Availability.objects.filter(professional_id=professional_id)
         serializer = AvailabilitySerializer(availabilities, many=True)
         return Response(serializer.data)
+    
+class PublicServiceViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Endpoint público para el buscador de Tratamientos.
+    Devuelve todos los servicios activos de todos los salones.
+    """
+    queryset = Service.objects.filter(is_active=True).order_by('name')
+    serializer_class = PublicServiceSerializer
+    permission_classes = [AllowAny]
