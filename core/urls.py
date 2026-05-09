@@ -1,26 +1,30 @@
-"""
-URL configuration for core project.
-"""
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings             
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
-# 1. IMPORTAMOS TU NUEVO SERIALIZADOR
+from blog.views import CommentViewSet, PostViewSet
+from rest_framework.routers import DefaultRouter
 from users.serializers import CustomTokenObtainPairSerializer
 
-# 2. CREAMOS LA VISTA CUSTOM AQUÍ MISMO
+# 1. CONFIGURAMOS EL ROUTER PARA EL BLOG
+router = DefaultRouter()
+router.register(r'posts', PostViewSet)
+router.register(r'comments', CommentViewSet)
+
+# 2. VISTA CUSTOM DEL TOKEN
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
-    path('api/blog/', include('blog.urls')),
-    path('api/bookings/', include('bookings.urls')), 
+    path('api/bookings/', include('bookings.urls')),
+    
+    # Aquí unificamos el blog. Con 'router.urls' ya se crean 
+    # automáticamente las rutas /api/blog/posts/ y /api/blog/posts/slug/
+    path('api/blog/', include(router.urls)), 
 
-    # 3. CAMBIAMOS LA RUTA DEL TOKEN PARA QUE USE NUESTRA VISTA CUSTOM
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

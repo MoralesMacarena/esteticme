@@ -16,6 +16,7 @@ import PanelNegocio from "./pages/PanelNegocio";
 import CalendarioProfesional from "./pages/CalendarioProfesional";
 import Perfil from "./pages/Perfil";
 import Tratamientos from "./pages/Tratamientos";
+import Blog from "./pages/Blog";
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/salones/:id" element={<SalonDetail />} />
             <Route path="/panel/perfil" element={<PanelNegocio />} />
             <Route path="/tratamientos" element={<Tratamientos />} />
+            <Route path="/blog" element={<Blog />} />
             <Route
               path="/panel/calendario"
               element={<CalendarioProfesional />}
