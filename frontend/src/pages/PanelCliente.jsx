@@ -335,13 +335,36 @@ export default function PanelCliente() {
             <h1 className="text-3xl font-black text-[#181411] mb-1">
               {user?.full_name || "Mi Área de Cliente"}
             </h1>
-            <p className="text-gray-500">{user?.email}</p>
+            <p className="text-gray-500 mb-4">{user?.email}</p>
+
+            {/* ========================================== */}
+            {/* 🔥 ¡NUEVO! ETIQUETA VIP DE PUNTOS 🔥 */}
+            {/* ========================================== */}
+            {user !== null && (
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 px-4 py-2 rounded-full shadow-sm cursor-default">
+                <span
+                  className="material-symbols-outlined text-[#f48c25] text-xl"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  stars
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-[#181411] text-lg leading-none mt-0.5">
+                    {user.points || 0} Puntos
+                  </span>
+                  <span className="text-xs text-gray-500 font-bold bg-white px-2 py-0.5 rounded-md border border-gray-100">
+                    = {((user.points || 0) / 100).toFixed(2)} €
+                  </span>
+                </div>
+              </div>
+            )}
+            {/* ========================================== */}
           </div>
 
           <div>
             <button
               onClick={() => setShowSettings(true)}
-              className="flex items-center gap-2 bg-gray-50 text-gray-700 hover:bg-[#f48c25] hover:text-white font-bold text-sm transition-colors border border-gray-200 hover:border-[#f48c25] px-5 py-2.5 rounded-xl shadow-sm"
+              className="flex items-center gap-2 bg-gray-50 text-gray-700 hover:bg-[#f48c25] hover:text-white font-bold text-sm transition-colors border border-gray-200 hover:border-[#f48c25] px-5 py-2.5 rounded-xl shadow-sm mt-4 sm:mt-0"
             >
               <span className="material-symbols-outlined text-[20px]">
                 edit

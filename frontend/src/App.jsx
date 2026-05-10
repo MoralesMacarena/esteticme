@@ -21,6 +21,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CreatePost from "./pages/CreatePost";
 import BlogDetail from "./pages/BlogDetail";
 import EditPost from "./pages/EditPost";
+import FAQFloating from "./components/FAQFloating";
 
 export default function App() {
   return (
@@ -129,7 +130,7 @@ export default function App() {
             />
           </Routes>
         </main>
-
+        <FAQFloating />
         <Footer />
       </div>
     </BrowserRouter>

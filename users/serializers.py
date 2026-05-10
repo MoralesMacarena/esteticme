@@ -36,8 +36,10 @@ class UserSerializer(serializers.ModelSerializer):
             'business_name', 'business_address', 'description',
             'profile_picture', 'salon_picture',
             'services', 'gallery_images',
-            'average_rating' # <-- 4. Lo exponemos a React
+            'average_rating',
+            'points'
         ]
+        read_only_fields = ['points']  
 
     def create(self, validated_data):
         # 1. Extraemos la contraseña antes de crear el usuario

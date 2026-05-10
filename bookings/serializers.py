@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Service, Booking, Availability, Review, Category
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,36 +39,37 @@ class BookingSerializer(serializers.ModelSerializer):
     client_name = serializers.ReadOnlyField(source='client.full_name')
     professional_name = serializers.ReadOnlyField(source='professional.business_name')
     
-    # Expandimos los servicios para ver nombre, precio, etc., no solo el ID
+    # Expandimos los servicios y reseñas
     services = ServiceSerializer(many=True, read_only=True)
     reviews = ReviewSerializer(many=True, read_only=True)
 
-    # --- EL CAMPO MÁGICO ---
-    # Este campo no existe en la base de datos, lo "fabricamos" nosotros aquí abajo
+    # El campo mágico del teléfono
     display_phone = serializers.SerializerMethodField()
+
+    # 👇 ¡LO NUEVO! El interruptor para que React nos diga si la clienta quiere gastar sus puntos
+    use_points = serializers.BooleanField(write_only=True, default=False)
 
     class Meta:
         model = Booking
         fields = [
             'id', 'professional', 'professional_name', 'booking_date', 'client',
             'start_time', 'total_price', 'status', 'service_ids', 'client_name', 
-            'guest_name', 'guest_phone', 'reviews', 'services', 'display_phone'
+            'guest_name', 'guest_phone', 'reviews', 'services', 'display_phone',
+            # Añadimos los campos de los puntos
+            'points_used', 'discount_amount', 'points_earned', 'use_points'
         ]
-        read_only_fields = ['id', 'client_name', 'professional_name', 'total_price']
+        # Evitamos que "hakeen" los descuentos enviando datos falsos
+        read_only_fields = ['id', 'client_name', 'professional_name', 'total_price', 'points_used', 'discount_amount', 'points_earned']
 
-    # --- LÓGICA DEL CAMPO MÁGICO ---
     def get_display_phone(self, obj):
-        # 1. Si hay cliente registrado y tiene teléfono, lo usamos
         if obj.client and obj.client.phone:
             return obj.client.phone
-        # 2. Si no (es un invitado), usamos el guest_phone que añadiste al modelo
         if obj.guest_phone:
             return obj.guest_phone
-        # 3. Si no hay nada de nada
         return "Sin teléfono"
 
     def validate(self, data):
-        # ... (Tu lógica de validate se queda exactamente igual)
+        # ... (Tu lógica de validate se queda exactamente igual) ...
         professional = data.get('professional')
         booking_date = data.get('booking_date')
         start_time = data.get('start_time')
@@ -101,19 +103,53 @@ class BookingSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        # ... (Tu lógica de create se queda exactamente igual)
         service_ids = validated_data.pop('service_ids')
+        # Sacamos el interruptor de los puntos (por defecto falso)
+        use_points = validated_data.pop('use_points', False)
+        
         start_time = validated_data['start_time']
+        client = validated_data.get('client') # Necesitamos saber quién es el cliente
         
         services_db = Service.objects.filter(id__in=service_ids)
         total_duration = sum([s.duration_minutes for s in services_db])
-        total_price = sum([s.price for s in services_db])
+        # Sumamos el precio original de los servicios
+        original_price = sum([s.price for s in services_db]) 
         
         dummy_date = datetime(2000, 1, 1, start_time.hour, start_time.minute)
         end_time = (dummy_date + timedelta(minutes=total_duration)).time()
         
         validated_data['end_time'] = end_time
-        validated_data['total_price'] = total_price 
+
+        # ==========================================
+        # 💸 LÓGICA DE DESCUENTO ESTILO SHEIN
+        # ==========================================
+        final_price = original_price
+        points_to_use = 0
+        discount = Decimal('0.00')
+
+        # Si el cliente quiere usar puntos y está logueado
+        if use_points and client and client.points > 0:
+            # 1. ¿Cuántos puntos necesita para que le salga gratis? (Precio * 100)
+            max_points_needed = int(original_price * 100)
+            
+            # 2. ¿Cuántos usamos? (Todo lo que tenga, o hasta que le salga gratis)
+            points_to_use = min(client.points, max_points_needed)
+            
+            # 3. Calculamos el dinero a descontar (Cada 100 ptos = 1€)
+            discount = Decimal(points_to_use) / Decimal('100.00')
+            
+            # 4. Le restamos el descuento al precio final
+            final_price -= discount
+            
+            # 5. Le quitamos los puntos del monedero y lo guardamos
+            client.points -= points_to_use
+            client.save()
+
+        # Guardamos los datos matemáticos en la cita
+        validated_data['total_price'] = final_price
+        validated_data['points_used'] = points_to_use
+        validated_data['discount_amount'] = discount
+        # ==========================================
         
         booking = Booking.objects.create(**validated_data)
         booking.services.set(services_db)

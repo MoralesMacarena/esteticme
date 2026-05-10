@@ -27,6 +27,29 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Booking.objects.filter(professional=user).order_by('-booking_date', 'start_time')
         else:
             return Booking.objects.filter(client=user).order_by('-booking_date', 'start_time')
+    
+    def perform_update(self, serializer):
+        # 1. Miramos cómo estaba la cita ANTES de guardar los cambios
+        old_status = self.get_object().status
+        
+        # 2. Guardamos los cambios nuevos que vengan desde React
+        booking = serializer.save()
+        
+        # 3. ¡LA MAGIA DE SHEIN! Si la cita acaba de pasar a "completed"...
+        if old_status != 'completed' and booking.status == 'completed':
+            
+            # Solo le damos puntos si es un cliente registrado (los invitados no tienen cuenta)
+            if booking.client:
+                # Calculamos los puntos: 1 punto por cada 1€ del precio final (sin decimales)
+                puntos_ganados = int(booking.total_price)
+                
+                # Se los sumamos a su monedero virtual
+                booking.client.points += puntos_ganados
+                booking.client.save()
+                
+                # Dejamos constancia en la cita de cuántos puntos se llevó
+                booking.points_earned = puntos_ganados
+                booking.save(update_fields=['points_earned'])
 
     @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
     def ocupadas(self, request):

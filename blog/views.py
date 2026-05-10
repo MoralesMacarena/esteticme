@@ -50,18 +50,16 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     # --- NUEVA FUNCIÓN PARA EL BORRADO SEGURO ---
     def destroy(self, request, *args, **kwargs):
-        comment = self.get_object() # Buscamos el comentario en la DB
+        comment = self.get_object() 
         
-        # Comprobamos si es Admin o si el usuario logueado es el autor
         is_admin = getattr(request.user, 'role', None) == 'admin' or request.user.is_superuser
-        is_owner = comment.user == request.user
+        # 👇 LA CLAVE: Comparamos directamente los números de ID
+        is_owner = comment.user.id == request.user.id
 
         if is_admin or is_owner:
-            # Si se cumple alguna, borramos de verdad
             self.perform_destroy(comment)
             return Response(status=status.HTTP_204_NO_CONTENT)
         
-        # Si no es ninguno de los dos, le denegamos el acceso
         return Response(
             {"detail": "No tienes permiso para borrar este comentario."},
             status=status.HTTP_403_FORBIDDEN

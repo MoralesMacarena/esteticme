@@ -17,19 +17,19 @@ export default function BlogDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // ESTADOS NUEVOS PARA EL MODAL DE BORRADO DE COMENTARIOS 👇
+  // ESTADOS PARA EL MODAL DE BORRADO DE COMENTARIOS
   const [showDeleteCommentModal, setShowDeleteCommentModal] = useState(false);
   const [commentToDeleteId, setCommentToDeleteId] = useState(null);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
 
-  const token = localStorage.getItem("access_token");
+  // ESTADO PARA EL USUARIO LOGUEADO REAL
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // VERIFICACIÓN ADMIN Y USUARIO ACTUAL
+  const token = localStorage.getItem("access_token");
   const isAdmin = localStorage.getItem("user_role") === "admin";
-  const userStr = localStorage.getItem("user");
-  const currentUser = userStr ? JSON.parse(userStr) : null;
 
   useEffect(() => {
+    // 1. Cargar el Post
     fetch(`http://127.0.0.1:8000/api/blog/posts/${slug}/`)
       .then((res) => {
         if (!res.ok) throw new Error("Post no encontrado");
@@ -43,29 +43,37 @@ export default function BlogDetail() {
         console.error(err);
         setLoading(false);
       });
-  }, [slug]);
+
+    // 2. Cargar el perfil del usuario actual para tener su ID real
+    if (token) {
+      fetch("http://127.0.0.1:8000/api/users/profiles/me/", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) setCurrentUser(data);
+        })
+        .catch((err) => console.error("Error cargando perfil:", err));
+    }
+  }, [slug, token]);
 
   // --- FUNCIÓN PARA CONFIRMAR EL BORRADO DEL POST ---
   const confirmDeletePost = () => {
     setIsDeleting(true);
-
     fetch(`http://127.0.0.1:8000/api/blog/posts/${slug}/`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
         if (res.ok || res.status === 204) {
-          navigate("/blog"); // Si se borra, volvemos a la lista del blog
+          navigate("/blog");
         } else {
-          alert("Hubo un error al eliminar el artículo. Revisa tus permisos.");
+          alert("Error al eliminar el artículo.");
           setIsDeleting(false);
           setShowDeleteModal(false);
         }
       })
-      .catch((err) => {
-        console.error("Error borrando:", err);
+      .catch(() => {
         setIsDeleting(false);
         setShowDeleteModal(false);
       });
@@ -109,43 +117,36 @@ export default function BlogDetail() {
       });
   };
 
-  // --- FUNCIÓN QUE SOLO ABRE EL MODAL DE COMENTARIOS ---
+  // --- ABRIR MODAL COMENTARIOS ---
   const handleDeleteComment = (commentId) => {
     setCommentToDeleteId(commentId);
     setShowDeleteCommentModal(true);
   };
 
-  // --- NUEVA FUNCIÓN QUE EJECUTA EL BORRADO REAL DEL COMENTARIO ---
+  // --- BORRADO REAL COMENTARIO ---
   const confirmDeleteComment = () => {
     if (!commentToDeleteId) return;
-
     setIsDeletingComment(true);
 
     fetch(`http://127.0.0.1:8000/api/blog/comments/${commentToDeleteId}/`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
         if (res.ok || res.status === 204) {
-          // Actualizamos el estado local
           setPost({
             ...post,
             comments: post.comments.filter((c) => c.id !== commentToDeleteId),
             comment_count: post.comment_count - 1,
           });
-          // Cerramos modal y limpiamos ID
           setShowDeleteCommentModal(false);
           setCommentToDeleteId(null);
         } else {
           alert("No tienes permiso para borrar este comentario.");
         }
       })
-      .catch((err) => console.error("Error borrando comentario:", err))
-      .finally(() => {
-        setIsDeletingComment(false);
-      });
+      .catch((err) => console.error(err))
+      .finally(() => setIsDeletingComment(false));
   };
 
   if (loading)
@@ -163,7 +164,7 @@ export default function BlogDetail() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 font-display relative">
-      {/* BARRA SUPERIOR: Volver + Acciones Admin */}
+      {/* BARRA SUPERIOR */}
       <div className="flex items-center justify-between mb-8">
         <Link
           to="/blog"
@@ -173,7 +174,6 @@ export default function BlogDetail() {
           Volver al Blog
         </Link>
 
-        {/* SOLO VISIBLE PARA ADMINS */}
         {isAdmin && (
           <div className="flex items-center gap-3">
             <Link
@@ -194,7 +194,7 @@ export default function BlogDetail() {
         )}
       </div>
 
-      {/* Cabecera del Artículo */}
+      {/* Cabecera */}
       <div className="mb-10 text-center">
         <span className="text-[#f48c25] font-black uppercase text-sm tracking-widest bg-orange-50 px-4 py-2 rounded-full">
           {post.category_name || "General"}
@@ -209,7 +209,6 @@ export default function BlogDetail() {
         </div>
       </div>
 
-      {/* Imagen Principal */}
       {post.image && (
         <img
           src={post.image}
@@ -218,18 +217,13 @@ export default function BlogDetail() {
         />
       )}
 
-      {/* CONTENIDO DEL POST ENCAPSULADO Y ESTILIZADO */}
       <div
         className="max-w-3xl mx-auto w-full text-gray-700 text-lg leading-relaxed break-words
-          [&>p]:mb-6 
-          [&_h1]:text-4xl [&_h1]:font-black [&_h1]:text-[#181411] [&_h1]:mt-10 [&_h1]:mb-6 
+          [&>p]:mb-6 [&_h1]:text-4xl [&_h1]:font-black [&_h1]:text-[#181411] [&_h1]:mt-10 [&_h1]:mb-6 
           [&_h2]:text-3xl [&_h2]:font-black [&_h2]:text-[#181411] [&_h2]:mt-10 [&_h2]:mb-4 
-          [&_h3]:text-2xl [&_h3]:font-black [&_h3]:text-[#181411] [&_h3]:mt-8 [&_h3]:mb-4 
-          [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-6 [&_ul>li]:mb-2 
-          [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-6 [&_ol>li]:mb-2 
-          [&_blockquote]:border-l-4 [&_blockquote]:border-[#f48c25] [&_blockquote]:bg-orange-50/50 [&_blockquote]:p-6 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_blockquote]:my-8 [&_blockquote]:rounded-r-2xl
-          [&_a]:text-[#f48c25] [&_a]:underline [&_a]:font-bold hover:[&_a]:text-orange-600
-          [&_img]:rounded-3xl [&_img]:my-10 [&_img]:w-full [&_img]:shadow-lg"
+          [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-6
+          [&_blockquote]:border-l-4 [&_blockquote]:border-[#f48c25] [&_blockquote]:bg-orange-50/50 [&_blockquote]:p-6 [&_blockquote]:italic [&_blockquote]:my-8 [&_blockquote]:rounded-r-2xl
+          [&_a]:text-[#f48c25] [&_a]:underline [&_a]:font-bold [&_img]:rounded-3xl [&_img]:my-10 [&_img]:w-full [&_img]:shadow-lg"
         dangerouslySetInnerHTML={{ __html: post.content }}
       />
 
@@ -249,16 +243,14 @@ export default function BlogDetail() {
             <textarea
               required
               rows="3"
-              placeholder="¿Qué te ha parecido el artículo? ¡Déjanos tu opinión!"
+              placeholder="¿Qué te ha parecido el artículo?"
               className="w-full bg-white border-none rounded-3xl p-6 text-[#181411] focus:ring-2 focus:ring-[#f48c25] outline-none shadow-sm resize-none mb-4"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-            ></textarea>
-
+            />
             {commentError && (
               <p className="text-red-500 font-bold mb-4">{commentError}</p>
             )}
-
             <button
               type="submit"
               disabled={commentLoading}
@@ -270,11 +262,11 @@ export default function BlogDetail() {
         ) : (
           <div className="bg-white p-6 rounded-3xl border border-gray-100 text-center mb-12 shadow-sm">
             <p className="text-gray-500 font-medium mb-4">
-              Debes iniciar sesión para poder comentar.
+              Debes iniciar sesión para comentar.
             </p>
             <Link
               to="/login"
-              className="inline-block bg-orange-100 text-[#f48c25] px-6 py-3 rounded-xl font-bold hover:bg-orange-200 transition-colors"
+              className="inline-block bg-orange-100 text-[#f48c25] px-6 py-3 rounded-xl font-bold hover:bg-orange-200"
             >
               Iniciar Sesión
             </Link>
@@ -284,7 +276,7 @@ export default function BlogDetail() {
         <div className="space-y-8">
           {post.comments && post.comments.length > 0 ? (
             post.comments.map((c) => {
-              // Comprobamos si el usuario logueado es el dueño de ESTE comentario
+              // COMPROBACIÓN CLAVE: ¿Es el dueño? (c.user es el ID del autor)
               const isOwner = currentUser && currentUser.id === c.user;
 
               return (
@@ -309,7 +301,6 @@ export default function BlogDetail() {
                       </div>
                     </div>
 
-                    {/* BOTÓN DE BORRAR (Solo visible para Admin o el dueño del comentario) */}
                     {(isAdmin || isOwner) && (
                       <button
                         onClick={() => handleDeleteComment(c.id)}
@@ -328,46 +319,38 @@ export default function BlogDetail() {
             })
           ) : (
             <p className="text-center text-gray-400 font-medium py-8 italic">
-              Aún no hay comentarios. ¡Sé la primera en opinar!
+              Aún no hay comentarios.
             </p>
           )}
         </div>
       </div>
 
-      {/* =========================================
-          MODAL DE CONFIRMACIÓN DE BORRADO DE POST 🚨
-          ========================================= */}
+      {/* MODAL BORRADO POST */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#181411]/60 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl transform transition-all">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl">
             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="material-symbols-outlined text-4xl">
                 delete_forever
               </span>
             </div>
-
-            <h3 className="text-3xl font-black text-center text-[#181411] mb-4 tracking-tight">
+            <h3 className="text-3xl font-black text-center mb-4">
               ¿Eliminar artículo?
             </h3>
-
-            <p className="text-gray-500 text-center mb-10 leading-relaxed">
-              Estás a punto de borrar permanentemente{" "}
-              <span className="font-bold text-[#181411]">"{post.title}"</span>.
-              Esta acción no se puede deshacer.
+            <p className="text-gray-500 text-center mb-10 italic">
+              "{post.title}"
             </p>
-
             <div className="flex flex-col gap-3">
               <button
                 onClick={confirmDeletePost}
                 disabled={isDeleting}
-                className="w-full bg-red-500 text-white py-4 rounded-2xl font-black hover:bg-red-600 transition-colors disabled:opacity-50 flex justify-center items-center"
+                className="w-full bg-red-500 text-white py-4 rounded-2xl font-black hover:bg-red-600 disabled:opacity-50"
               >
                 {isDeleting ? "Eliminando..." : "Sí, eliminar artículo"}
               </button>
               <button
                 onClick={() => setShowDeleteModal(false)}
-                disabled={isDeleting}
-                className="w-full bg-gray-50 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
+                className="w-full bg-gray-50 text-gray-600 py-4 rounded-2xl font-bold"
               >
                 Cancelar
               </button>
@@ -376,42 +359,32 @@ export default function BlogDetail() {
         </div>
       )}
 
-      {/* =========================================
-          MODAL DE CONFIRMACIÓN DE BORRADO DE COMENTARIO 🚨
-          ========================================= */}
+      {/* MODAL BORRADO COMENTARIO */}
       {showDeleteCommentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#181411]/60 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl transform transition-all">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl">
             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="material-symbols-outlined text-4xl">delete</span>
             </div>
-
-            <h3 className="text-3xl font-black text-center text-[#181411] mb-4 tracking-tight">
+            <h3 className="text-3xl font-black text-center mb-4">
               ¿Eliminar comentario?
             </h3>
-
-            <p className="text-gray-500 text-center mb-10 leading-relaxed">
-              ¿Estás segura de que quieres eliminar este comentario? Esta acción
-              no se puede deshacer.
+            <p className="text-gray-500 text-center mb-10">
+              Esta acción no se puede deshacer.
             </p>
-
             <div className="flex flex-col gap-3">
               <button
                 onClick={confirmDeleteComment}
                 disabled={isDeletingComment}
-                className="w-full bg-red-500 text-white py-4 rounded-2xl font-black hover:bg-red-600 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+                className="w-full bg-red-500 text-white py-4 rounded-2xl font-black hover:bg-red-600 disabled:opacity-50"
               >
                 {isDeletingComment
                   ? "Eliminando..."
                   : "Sí, eliminar comentario"}
               </button>
               <button
-                onClick={() => {
-                  setShowDeleteCommentModal(false);
-                  setCommentToDeleteId(null);
-                }}
-                disabled={isDeletingComment}
-                className="w-full bg-gray-50 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
+                onClick={() => setShowDeleteCommentModal(false)}
+                className="w-full bg-gray-50 text-gray-600 py-4 rounded-2xl font-bold"
               >
                 Cancelar
               </button>

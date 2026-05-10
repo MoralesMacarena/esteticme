@@ -74,6 +74,9 @@ class Booking(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
+    points_used = models.IntegerField(default=0, help_text="Puntos que el cliente gastó en esta reserva")
+    discount_amount = models.DecimalField(max_digits=6, decimal_places=2, default=0.00, help_text="Dinero descontado por los puntos")
+    points_earned = models.IntegerField(default=0, help_text="Puntos que ganó por esta reserva")
 
     def __str__(self):
         # Prevenimos el error: si hay cliente web mostramos su email, si no, el nombre manual

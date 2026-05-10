@@ -20,6 +20,7 @@ class CustomUser(AbstractUser):
     business_address = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     salon_picture = models.ImageField(upload_to='salons/', blank=True, null=True)
+    points = models.IntegerField(default=0, help_text="Puntos de fidelidad acumulados")
     
 
         # Le decimos a Django que queremos ver el email cuando busquemos un usuario

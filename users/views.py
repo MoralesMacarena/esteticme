@@ -67,6 +67,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # 4. VIEWSET PARA REACT (Público y Seguro)
+# 4. VIEWSET PARA REACT (Público y Seguro)
 class ProfessionalViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet para listar salones con capacidad de búsqueda.
@@ -77,15 +78,15 @@ class ProfessionalViewSet(viewsets.ReadOnlyModelViewSet):
         # 1. Empezamos con todos los profesionales activos
         queryset = CustomUser.objects.filter(role='professional', is_active=True)
         
-        # 2. Capturamos el parámetro 'search' de la URL (ej: ?search=corte)
+        # 2. Capturamos el parámetro 'search' de la URL (ej: ?search=Madrid)
         search_query = self.request.query_params.get('search', None)
         
         if search_query:
-            # 3. Filtramos por nombre de negocio O descripción O nombre de servicios
             queryset = queryset.filter(
                 Q(business_name__icontains=search_query) | 
                 Q(description__icontains=search_query) |
-                Q(services__name__icontains=search_query) 
+                Q(services__name__icontains=search_query) |
+                Q(business_address__icontains=search_query)     
             ).distinct() 
             
         return queryset
