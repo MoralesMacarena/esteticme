@@ -9,8 +9,10 @@ from users.serializers import CustomTokenObtainPairSerializer
 
 # 1. CONFIGURAMOS EL ROUTER PARA EL BLOG
 router = DefaultRouter()
-router.register(r'posts', PostViewSet)
-router.register(r'comments', CommentViewSet)
+
+# ---> AÑADIMOS EL BASENAME EN ESTAS DOS LÍNEAS <---
+router.register(r'posts', PostViewSet, basename='post')
+router.register(r'comments', CommentViewSet, basename='comment')
 
 # 2. VISTA CUSTOM DEL TOKEN
 class CustomTokenObtainPairView(TokenObtainPairView):

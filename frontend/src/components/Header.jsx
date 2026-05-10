@@ -7,15 +7,15 @@ export default function Header() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState(null); // NUEVO ESTADO: Guardamos el rol
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    const role = localStorage.getItem("user_role"); // NUEVO: Leemos el rol guardado
+    const role = localStorage.getItem("user_role");
 
     if (token) {
       setIsAuthenticated(true);
-      setUserRole(role || "client"); // Si por algún motivo no hay rol, asumimos cliente por seguridad
+      setUserRole(role || "client");
     } else {
       setIsAuthenticated(false);
       setUserRole(null);
@@ -23,10 +23,9 @@ export default function Header() {
   }, [location]);
 
   const handleLogout = () => {
-    // Limpiamos TODA la basura del localStorage
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_role"); // <-- Importante no olvidar esto
+    localStorage.removeItem("user_role");
 
     setIsAuthenticated(false);
     setUserRole(null);
@@ -43,7 +42,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-[100] w-full bg-white shadow-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between whitespace-nowrap px-4 sm:px-6 lg:px-8 py-3">
-        {/* LOGO (Se mantiene igual) */}
+        {/* LOGO */}
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-3 text-[#181411]">
             <div className="size-6 text-[#f48c25]">
@@ -66,7 +65,7 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* BUSCADOR Y LINKS CENTRALES (Se mantienen igual) */}
+        {/* BUSCADOR Y LINKS CENTRALES */}
         <div className="flex flex-1 justify-center items-center gap-8">
           <div className="hidden md:flex items-center gap-9">
             <Link
@@ -104,12 +103,22 @@ export default function Header() {
           </label>
         </div>
 
-        {/* ZONA DERECHA: Renderizado Condicional por Roles */}
+        {/* ZONA DERECHA: Renderizado Condicional por 3 Roles */}
         <div className="flex gap-4 items-center">
           {isAuthenticated ? (
             <>
-              {/* MAGIA: Discriminamos por ROL */}
-              {userRole === "professional" ? (
+              {userRole === "admin" ? (
+                // BOTÓN PARA ADMIN
+                <Link
+                  to="/admin-dashboard"
+                  className="flex items-center gap-2 text-sm font-bold text-red-600 hover:text-red-800 transition-colors"
+                >
+                  <span className="material-symbols-outlined">
+                    admin_panel_settings
+                  </span>
+                  <span className="hidden sm:inline">Gestión de la app</span>
+                </Link>
+              ) : userRole === "professional" ? (
                 // BOTÓN PARA PROFESIONALES
                 <Link
                   to="/panel"
@@ -119,7 +128,7 @@ export default function Header() {
                   <span className="hidden sm:inline">Mi Panel</span>
                 </Link>
               ) : (
-                // BOTÓN PARA CLIENTES NORMALES
+                // BOTÓN PARA CLIENTES NORMALES (y fallback)
                 <Link
                   to="/perfil"
                   className="flex items-center gap-2 text-sm font-bold text-[#181411] hover:text-[#f48c25] transition-colors"

@@ -2,14 +2,12 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class CustomUser(AbstractUser):
-    # Opciones para tu campo ENUM de roles
     ROLE_CHOICES = (
         ('client', 'Cliente'),
         ('professional', 'Profesional'),
         ('admin', 'Administrador'),
     )
 
-    # Django ya  crea los campos 'id' y 'password' automáticamente en secreto
     
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='client')
@@ -49,3 +47,4 @@ class SalonImage(models.Model):
             # Si el profesional no tiene puesto business_name, usamos su full_name
             name = self.professional.business_name or self.professional.full_name
             return f"Foto de galería - {name}"
+

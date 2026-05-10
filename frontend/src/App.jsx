@@ -17,6 +17,10 @@ import CalendarioProfesional from "./pages/CalendarioProfesional";
 import Perfil from "./pages/Perfil";
 import Tratamientos from "./pages/Tratamientos";
 import Blog from "./pages/Blog";
+import AdminDashboard from "./pages/AdminDashboard";
+import CreatePost from "./pages/CreatePost";
+import BlogDetail from "./pages/BlogDetail";
+import EditPost from "./pages/EditPost";
 
 export default function App() {
   return (
@@ -27,22 +31,18 @@ export default function App() {
         {/* el contenido cambia según la URL */}
         <main className="flex-grow">
           <Routes>
-            {/* RUTAS PÚBLICAS */}
+            {/* 🟢 RUTAS PÚBLICAS (Cualquiera puede entrar) */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/signup-business" element={<SignupBusiness />} />
             <Route path="/salones" element={<Salones />} />
             <Route path="/salones/:id" element={<SalonDetail />} />
-            <Route path="/panel/perfil" element={<PanelNegocio />} />
             <Route path="/tratamientos" element={<Tratamientos />} />
             <Route path="/blog" element={<Blog />} />
-            <Route
-              path="/panel/calendario"
-              element={<CalendarioProfesional />}
-            />
+            <Route path="/blog/:slug" element={<BlogDetail />} />
 
-            {/* RUTAS PROTEGIDAS GENERALES */}
+            {/* 🟡 RUTAS PROTEGIDAS GENERALES (Cualquiera que haya hecho login) */}
             <Route
               path="/checkout"
               element={
@@ -68,6 +68,7 @@ export default function App() {
               }
             />
 
+            {/* 🟠 RUTAS PROTEGIDAS PROFESIONALES (Solo role="professional") */}
             <Route
               path="/panel"
               element={
@@ -81,6 +82,48 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRole="professional">
                   <PanelServicios />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/panel/perfil"
+              element={
+                <ProtectedRoute allowedRole="professional">
+                  <PanelNegocio />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/panel/calendario"
+              element={
+                <ProtectedRoute allowedRole="professional">
+                  <CalendarioProfesional />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 🔴 RUTAS PROTEGIDAS ADMINISTRADOR (Solo role="admin") */}
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoute allowedRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-dashboard/nuevo-post"
+              element={
+                <ProtectedRoute allowedRole="admin">
+                  <CreatePost />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/blog/:slug/edit"
+              element={
+                <ProtectedRoute allowedRole="admin">
+                  <EditPost />
                 </ProtectedRoute>
               }
             />

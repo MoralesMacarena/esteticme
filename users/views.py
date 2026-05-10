@@ -1,11 +1,16 @@
 from rest_framework import viewsets, generics, status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.views import APIView # <-- NUEVO: Para crear vistas personalizadas sueltas
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser # <-- NUEVO: Añadido IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Q
 from .models import CustomUser, SalonImage
 from .serializers import CustomTokenObtainPairSerializer, UserSerializer
+
+# <-- NUEVO: Importamos el modelo de Citas/Reservas
+# OJO: Si tu modelo se llama "Cita" o está en otra app, cámbialo aquí.
+from bookings.models import Booking 
 
 # 1. VISTA DE REGISTRO
 class RegisterView(generics.CreateAPIView):
@@ -84,3 +89,38 @@ class ProfessionalViewSet(viewsets.ReadOnlyModelViewSet):
             ).distinct() 
             
         return queryset
+
+# --------------------------------------------------------
+# 5. VISTA DEL DASHBOARD ADMIN (¡LO NUEVO DE HOY!)
+# --------------------------------------------------------
+class AdminDashboardStatsView(APIView):
+    # El portero: solo deja pasar a administradores
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        # 1. Contamos los usuarios y profesionales (usamos CustomUser que ya está importado arriba)
+        total_users = CustomUser.objects.count()
+        total_professionals = CustomUser.objects.filter(role='professional').count()
+        
+        # Contamos las citas 
+        total_bookings = Booking.objects.count() 
+
+        # 2. Obtenemos los últimos 5 profesionales registrados
+        latest_pros = CustomUser.objects.filter(role='professional').order_by('-date_joined')[:5]
+        
+        # Preparamos la lista para enviarla al Frontend
+        latest_pros_data = [
+            {
+                "id": pro.id,
+                "business_name": pro.business_name or pro.full_name, # Si no tiene nombre de negocio, usamos su nombre
+                "date_joined": pro.date_joined.strftime("%d/%m/%Y")
+            } for pro in latest_pros
+        ]
+
+        # 3. Empaquetamos todo en un JSON y lo enviamos
+        return Response({
+            "total_users": total_users,
+            "total_professionals": total_professionals,
+            "total_bookings": total_bookings,
+            "latest_professionals": latest_pros_data
+        })

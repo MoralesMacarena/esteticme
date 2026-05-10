@@ -4,8 +4,10 @@ from .views import PostViewSet, CommentViewSet
 
 # El enrutador mágico para el blog
 router = DefaultRouter()
-router.register(r'posts', PostViewSet)
-router.register(r'comments', CommentViewSet)
+
+# ---> AÑADIMOS EL BASENAME AQUÍ <---
+router.register(r'posts', PostViewSet, basename='post')
+router.register(r'comments', CommentViewSet, basename='comment')
 
 urlpatterns = [
     path('', include(router.urls)),

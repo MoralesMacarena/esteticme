@@ -10,3 +10,33 @@
     "opsz" 24;
   font-size: 20px;
 }
+
+/* Reparación de React Quill */
+.ql-container {
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+  background-color: #f9fafb; /* gray-50 */
+  font-family: inherit;
+  font-size: 1.1rem;
+}
+
+.ql-toolbar {
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+  background-color: #ffffff;
+  border-color: #f3f4f6 !important; /* border-gray-100 */
+}
+
+.ql-editor {
+  min-height: 250px;
+}
+
+/* Arregla el triángulo negro gigante (los iconos de Quill) */
+.ql-snow .ql-picker.ql-header .ql-picker-label::before,
+.ql-snow .ql-picker.ql-header .ql-picker-item::before {
+  content: "Texto" !important;
+}
+
+.ql-stroke {
+  stroke: #181411 !important;
+}
