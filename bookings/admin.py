@@ -1,40 +1,59 @@
 from django.contrib import admin
 from .models import Service, Booking, Availability, Review, Category
 
-# 1. Servicios
-admin.site.register(Category)
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    """
+    Configuración del panel de administración para las categorías de servicios.
+    """
+    list_display = ('name', 'icon')
+
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'professional', 'price', 'is_active') # Añadimos category a la lista
+    """
+    Configuración del panel de administración para los servicios.
+    Añade filtros y columnas visibles para facilitar la gestión.
+    """
+    list_display = ('name', 'category', 'professional', 'price', 'is_active')
     list_filter = ('category', 'is_active', 'professional')
 
-# 2. Reservas
 
+@admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    # 1. Quitamos 'service' de la lista y ponemos nuestra función inventada 'get_services'
+    """
+    Configuración del panel de administración para las reservas.
+    Incluye una función personalizada para mostrar campos ManyToMany (servicios)
+    directamente en la tabla principal.
+    """
     list_display = ('client', 'professional', 'booking_date', 'start_time', 'status', 'get_services')
-    
-    # ... si tienes search_fields o list_filter, déjalos como los tenías ...
+    list_filter = ('status', 'booking_date', 'professional') 
+    search_fields = ('guest_name', 'professional__business_name') 
 
-    # 2. Creamos esta pequeña función mágica para mostrar los servicios como texto separado por comas
     def get_services(self, obj):
-        # Recorre los servicios elegidos y une sus nombres con una coma
+        """
+        Concatena y devuelve los nombres de todos los servicios asociados a la cita.
+        Requerido porque Django no permite mostrar campos ManyToMany directamente en list_display.
+        """
         return ", ".join([service.name for service in obj.services.all()])
     
-    # Le ponemos el nombre bonito a la columna
     get_services.short_description = 'Servicios'
 
-admin.site.register(Booking, BookingAdmin)
 
-# 3. Disponibilidad (Horarios)
 @admin.register(Availability)
 class AvailabilityAdmin(admin.ModelAdmin):
+    """
+    Configuración del panel de administración para la disponibilidad (horarios).
+    """
     list_display = ('professional', 'day_of_week', 'start_time', 'end_time')
-    list_filter = ('day_of_week',)
+    list_filter = ('day_of_week', 'professional')
 
-# 4. Reseñas
+
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
+    """
+    Configuración del panel de administración para las reseñas.
+    """
     list_display = ('booking', 'rating', 'created_at')
     list_filter = ('rating',)
