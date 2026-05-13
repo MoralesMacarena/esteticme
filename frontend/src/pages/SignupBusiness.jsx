@@ -4,7 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 export default function SignupBusiness() {
   const navigate = useNavigate();
 
-  // Adaptado 100% a tu models.py (usando full_name y añadiendo los campos de negocio)
   const [formData, setFormData] = useState({
     username: "",
     full_name: "",
@@ -19,6 +18,8 @@ export default function SignupBusiness() {
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -28,14 +29,80 @@ export default function SignupBusiness() {
     e.preventDefault();
     setErrorMessage("");
 
-    if (formData.password !== formData.confirmPassword) {
-      setErrorMessage("Las contraseñas no coinciden.");
+    // --- VALIDACIÓN ESPECÍFICA CAMPO POR CAMPO ---
+
+    // 1. Validaciones del Administrador
+    if (!formData.username.trim()) {
+      setErrorMessage("Falta el Usuario de acceso.");
       return;
     }
 
+    if (!formData.full_name.trim()) {
+      setErrorMessage("Falta el Nombre y Apellidos del administrador.");
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setErrorMessage("Falta el Correo Electrónico.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setErrorMessage(
+        "El formato del correo no es válido (ejemplo: contacto@tusalon.com).",
+      );
+      return;
+    }
+
+    if (!formData.phone.trim()) {
+      setErrorMessage("Falta el Teléfono de Contacto.");
+      return;
+    }
+
+    if (!formData.password) {
+      setErrorMessage("Falta la Contraseña.");
+      return;
+    }
+
+    // Regex: Mínimo 8 caracteres, 1 mayúscula, 1 número
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      setErrorMessage(
+        "La contraseña debe tener al menos 8 caracteres, una letra mayúscula y un número.",
+      );
+      return;
+    }
+
+    if (!formData.confirmPassword) {
+      setErrorMessage("Por favor, repite la contraseña para confirmarla.");
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMessage("Las contraseñas no coinciden. Compruébalas de nuevo.");
+      return;
+    }
+
+    // 2. Validaciones del Negocio
+    if (!formData.business_name.trim()) {
+      setErrorMessage("Falta el Nombre Comercial del salón.");
+      return;
+    }
+
+    if (!formData.business_address.trim()) {
+      setErrorMessage("Falta la Dirección Completa del salón.");
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      setErrorMessage("Falta la Biografía / Especialidades del salón.");
+      return;
+    }
+    // --------------------------------------------------------------
+
     setLoading(true);
 
-    // Preparamos el paquete exacto que espera tu backend
     const payload = {
       username: formData.username,
       full_name: formData.full_name,
@@ -62,199 +129,239 @@ export default function SignupBusiness() {
         navigate("/login", {
           state: {
             message:
-              "¡Cuenta profesional creada! Ya puedes entrar y añadir fotos a tu galería.",
+              "¡Cuenta profesional creada! Ya puedes entrar y configurar tu salón.",
           },
         });
       } else {
         const errorData = await response.json();
         const errorText = errorData.username
-          ? `Usuario: ${errorData.username[0]}`
+          ? `El usuario "${formData.username}" ya está en uso.`
           : errorData.email
-            ? `Email: ${errorData.email[0]}`
+            ? `El correo "${formData.email}" ya está registrado.`
             : "Revisa los datos introducidos.";
         setErrorMessage(errorText);
       }
     } catch (error) {
-      setErrorMessage("Error de conexión con el servidor.");
+      setErrorMessage(
+        "Error de conexión con el servidor. Inténtalo más tarde.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // --- VARIABLES DE ESTILO AURA (Con contraste mejorado) ---
+  const inputStyles =
+    "w-full bg-white/80 border border-purple-100 rounded-2xl px-6 py-4 text-aura-plum font-medium focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-purple-300";
+  const labelStyles =
+    "block text-[11px] font-black text-aura-plum/80 mb-2 uppercase tracking-[0.2em] ml-2";
+  const sectionTitle =
+    "text-2xl font-serif text-aura-plum mb-6 flex items-center gap-3";
+  const pearlBtn =
+    "w-full bg-gradient-to-r from-purple-100 via-white to-fuchsia-100 border border-white/60 shadow-pearl text-aura-plum py-5 rounded-2xl font-bold text-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex justify-center items-center shadow-lg mt-8";
+
   return (
-    <main className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#181411] min-h-screen">
-      <div className="w-full max-w-2xl">
-        {" "}
-        {/* Hecho un poco más ancho para albergar más campos */}
-        <div className="bg-white shadow-2xl rounded-xl p-8 space-y-6">
-          <div className="text-center mb-8">
-            <span className="material-symbols-outlined text-[#f48c25] text-4xl mb-2">
-              storefront
-            </span>
-            <h1 className="text-3xl font-black tracking-tight text-[#181411]">
+    <main className="min-h-screen bg-aura-lavender flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
+      {/* Círculos decorativos de fondo */}
+      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-white/40 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/4"></div>
+      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-200/30 rounded-full blur-3xl translate-y-1/3 translate-x-1/4"></div>
+
+      {/* Contenedor más ancho (max-w-4xl) para el formulario de negocios */}
+      <div className="w-full max-w-4xl relative z-10">
+        <div className="bg-white/50 backdrop-blur-xl shadow-[0_20px_50px_rgba(200,160,255,0.2)] rounded-[3rem] p-10 sm:p-16 border border-white/60">
+          <div className="text-center mb-12">
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-purple-50">
+              <span className="material-symbols-outlined text-aura-plum text-4xl">
+                storefront
+              </span>
+            </div>
+            <h1 className="text-5xl font-serif text-aura-plum tracking-tight mb-4">
               Perfil de Negocio
             </h1>
-            <p className="mt-2 text-sm text-gray-500">
-              Registra tu salón y empieza a recibir reservas hoy mismo.
+            <p className="text-lg text-gray-500 font-light italic">
+              Digitaliza tu salón y empieza a recibir reservas hoy mismo.
             </p>
           </div>
 
           {errorMessage && (
-            <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm text-center border border-red-100">
+            <div className="bg-red-50 border border-red-100 text-red-500 p-4 rounded-2xl text-sm text-center mb-8 flex items-center justify-center gap-2 font-medium">
+              <span className="material-symbols-outlined text-lg">error</span>
               {errorMessage}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* EL ATRIBUTO noValidate BLOQUEA LOS TOOLTIPS NATIVOS DEL NAVEGADOR */}
+          <form onSubmit={handleSubmit} className="space-y-12" noValidate>
             {/* SECCIÓN 1: DATOS PERSONALES */}
-            <div>
-              <h3 className="text-lg font-bold text-[#181411] border-b pb-2 mb-4">
-                1. Tus datos de acceso
+            <div className="bg-white/60 p-8 rounded-[2rem] border border-white">
+              <h3 className={sectionTitle}>
+                <span className="bg-purple-100 text-aura-plum w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+                  1
+                </span>
+                Datos del Administrador
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-[#181411] pb-1">
-                    Usuario
-                  </label>
+                  <label className={labelStyles}>Usuario de acceso</label>
                   <input
                     name="username"
                     type="text"
-                    required
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-300 bg-white h-11 px-4 focus:ring-2 focus:ring-[#181411] outline-none"
+                    className={inputStyles}
+                    placeholder="Ej. admin_glamour"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#181411] pb-1">
-                    Nombre Completo
-                  </label>
+                  <label className={labelStyles}>Nombre y Apellidos</label>
                   <input
                     name="full_name"
                     type="text"
-                    required
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-300 bg-white h-11 px-4 focus:ring-2 focus:ring-[#181411] outline-none"
+                    className={inputStyles}
                     placeholder="Ej. María Pérez"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#181411] pb-1">
-                    Email
-                  </label>
+                  <label className={labelStyles}>Correo Electrónico</label>
                   <input
                     name="email"
                     type="email"
-                    required
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-300 bg-white h-11 px-4 focus:ring-2 focus:ring-[#181411] outline-none"
+                    className={inputStyles}
+                    placeholder="contacto@tusalon.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#181411] pb-1">
-                    Teléfono
-                  </label>
+                  <label className={labelStyles}>Teléfono de Contacto</label>
                   <input
                     name="phone"
                     type="tel"
-                    required
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-300 bg-white h-11 px-4 focus:ring-2 focus:ring-[#181411] outline-none"
+                    className={inputStyles}
+                    placeholder="+34 600 000 000"
                   />
                 </div>
+
+                {/* Contraseñas */}
                 <div>
-                  <label className="block text-sm font-semibold text-[#181411] pb-1">
-                    Contraseña
-                  </label>
-                  <input
-                    name="password"
-                    type="password"
-                    required
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-300 bg-white h-11 px-4 focus:ring-2 focus:ring-[#181411] outline-none"
-                  />
+                  <label className={labelStyles}>Contraseña</label>
+                  <div className="relative">
+                    <input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      onChange={handleChange}
+                      className={`${inputStyles} [&::-ms-reveal]:hidden [&::-webkit-credentials-auto-fill-button]:hidden`}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-4 flex items-center justify-center text-aura-plum/60 hover:text-aura-plum transition-colors"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        {showPassword ? "visibility" : "visibility_off"}
+                      </span>
+                    </button>
+                  </div>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-semibold text-[#181411] pb-1">
-                    Confirmar Contraseña
-                  </label>
-                  <input
-                    name="confirmPassword"
-                    type="password"
-                    required
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-300 bg-white h-11 px-4 focus:ring-2 focus:ring-[#181411] outline-none"
-                  />
+                  <label className={labelStyles}>Confirmar Contraseña</label>
+                  <div className="relative">
+                    <input
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      onChange={handleChange}
+                      className={`${inputStyles} [&::-ms-reveal]:hidden [&::-webkit-credentials-auto-fill-button]:hidden`}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-4 flex items-center justify-center text-aura-plum/60 hover:text-aura-plum transition-colors"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        {showConfirmPassword ? "visibility" : "visibility_off"}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* SECCIÓN 2: DATOS DEL NEGOCIO */}
-            <div>
-              <h3 className="text-lg font-bold text-[#181411] border-b pb-2 mb-4 mt-6">
-                2. Información del Salón
+            <div className="bg-white/60 p-8 rounded-[2rem] border border-white">
+              <h3 className={sectionTitle}>
+                <span className="bg-purple-100 text-aura-plum w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+                  2
+                </span>
+                Información del Salón
               </h3>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-[#181411] pb-1">
-                      Nombre del Negocio
-                    </label>
+                    <label className={labelStyles}>Nombre Comercial</label>
                     <input
                       name="business_name"
                       type="text"
-                      required
                       onChange={handleChange}
-                      className="w-full rounded-lg border border-gray-300 bg-white h-11 px-4 focus:ring-2 focus:ring-[#181411] outline-none"
+                      className={inputStyles}
                       placeholder="Ej. Glamour Estilistas"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#181411] pb-1">
-                      Dirección Completa
-                    </label>
+                    <label className={labelStyles}>Dirección Completa</label>
                     <input
                       name="business_address"
                       type="text"
-                      required
                       onChange={handleChange}
-                      className="w-full rounded-lg border border-gray-300 bg-white h-11 px-4 focus:ring-2 focus:ring-[#181411] outline-none"
-                      placeholder="Calle, Número, Ciudad, CP"
+                      className={inputStyles}
+                      placeholder="Calle, Número, Localidad"
                     />
                   </div>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-semibold text-[#181411] pb-1">
-                    Descripción de los servicios (Biografía)
+                  <label className={labelStyles}>
+                    Biografía / Especialidades
                   </label>
                   <textarea
                     name="description"
-                    required
-                    rows="3"
+                    rows="4"
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-300 bg-white p-4 focus:ring-2 focus:ring-[#181411] outline-none resize-none"
-                    placeholder="Cuéntale a tus clientes qué hace especial a tu salón..."
+                    className={`${inputStyles} resize-none`}
+                    placeholder="Cuéntale a tus futuros clientes qué hace especial a tu salón, qué marcas utilizáis o cuál es vuestro tratamiento estrella..."
                   ></textarea>
                 </div>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full rounded-lg bg-[#181411] py-4 px-4 text-lg font-bold text-white transition-colors mt-8 shadow-lg ${loading ? "opacity-70 cursor-not-allowed" : "hover:bg-gray-800"}`}
-            >
-              {loading ? "Procesando..." : "Crear Cuenta y Registrar Salón"}
+            <button type="submit" disabled={loading} className={pearlBtn}>
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-aura-plum border-t-transparent rounded-full animate-spin"></div>
+                  Verificando datos...
+                </span>
+              ) : (
+                "Completar Registro Profesional"
+              )}
             </button>
           </form>
 
-          <div className="text-center text-sm text-gray-600 pt-6 border-t border-gray-100">
-            ¿Ya tienes cuenta?{" "}
-            <Link
-              to="/login"
-              className="font-bold text-[#181411] hover:underline"
-            >
-              Entrar a mi panel
-            </Link>
+          <div className="mt-12 pt-8 border-t border-purple-100/50 text-center">
+            <p className="text-sm text-gray-500 font-light">
+              ¿Ya gestionas tu negocio con nosotros?{" "}
+              <Link
+                to="/login"
+                className="font-bold text-aura-plum border-b border-purple-200 hover:border-aura-plum pb-0.5 transition-colors"
+              >
+                Accede a tu panel
+              </Link>
+            </p>
           </div>
         </div>
       </div>
