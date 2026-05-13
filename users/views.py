@@ -67,7 +67,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # 4. VIEWSET PARA REACT (Público y Seguro)
-# 4. VIEWSET PARA REACT (Público y Seguro)
 class ProfessionalViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet para listar salones con capacidad de búsqueda.
