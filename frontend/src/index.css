@@ -1,7 +1,10 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
-/* Configuración de los iconos */
+/* ==========================================================================
+   MATERIAL DESIGN ICONS
+   ========================================================================== */
+/* Configuración base para el renderizado correcto de la tipografía de iconos */
 .material-symbols-outlined {
   font-variation-settings:
     "FILL" 0,
@@ -11,11 +14,16 @@
   font-size: 20px;
 }
 
-/* Reparación de React Quill */
+/* ==========================================================================
+   OVERRIDE: REACT QUILL (Editor de Texto Enriquecido)
+   ========================================================================== */
+/* Sobrescribimos las clases por defecto inyectadas por la librería Quill
+   para adaptar su estética al sistema de diseño del proyecto (bordes, colores).
+*/
 .ql-container {
   border-bottom-left-radius: 1rem;
   border-bottom-right-radius: 1rem;
-  background-color: #f9fafb; /* gray-50 */
+  background-color: #f9fafb; /* tailwind: gray-50 */
   font-family: inherit;
   font-size: 1.1rem;
 }
@@ -24,14 +32,14 @@
   border-top-left-radius: 1rem;
   border-top-right-radius: 1rem;
   background-color: #ffffff;
-  border-color: #f3f4f6 !important; /* border-gray-100 */
+  border-color: #f3f4f6 !important; /* tailwind: gray-100 */
 }
 
 .ql-editor {
   min-height: 250px;
 }
 
-/* Arregla el triángulo negro gigante (los iconos de Quill) */
+/* Corrección visual para los selectores internos y el SVG (triángulo negro) */
 .ql-snow .ql-picker.ql-header .ql-picker-label::before,
 .ql-snow .ql-picker.ql-header .ql-picker-item::before {
   content: "Texto" !important;

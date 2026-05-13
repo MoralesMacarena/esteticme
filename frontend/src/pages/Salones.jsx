@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SalonCard from "../components/SalonCard";
 
@@ -6,65 +6,87 @@ export default function Salones() {
   const [salones, setSalones] = useState([]);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
-  const [localSearch, setLocalSearch] = useState("");
   const navigate = useNavigate();
 
+  const [localSearch, setLocalSearch] = useState("");
   const [viewMode, setViewMode] = useState("grid");
 
-  const BACKEND_URL = "http://127.0.0.1:8000"; // <-- Nuestra ruta salvadora
+  const BACKEND_URL = "http://127.0.0.1:8000";
+
+  // Función para normalizar y limpiar las URLs de las imágenes
+  const formatImageUrl = useCallback(
+    (url) => {
+      if (url && !url.startsWith("http")) {
+        return `${BACKEND_URL}${url}`;
+      }
+      return url;
+    },
+    [BACKEND_URL],
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const search = params.get("search") || "";
     const urlLocation = params.get("location") || "";
 
-    if (urlLocation) setLocalSearch(urlLocation);
+    // Sincronizamos el estado local con la URL para que el input sea coherente
+    setLocalSearch(urlLocation || search);
 
     setLoading(true);
-    fetch(`${BACKEND_URL}/api/users/salones/?search=${search}`)
+
+    /**
+     * ESTRATEGIA DE BÚSQUEDA PROFESIONAL:
+     * Unificamos los criterios en una sola 'query' para maximizar resultados.
+     * Si el backend espera 'search', le enviamos todo concatenado.
+     */
+    const combinedQuery = [search, urlLocation].filter(Boolean).join(" ");
+    const fetchUrl = `${BACKEND_URL}/api/users/salones/?search=${encodeURIComponent(combinedQuery)}`;
+
+    fetch(fetchUrl)
       .then((res) => res.json())
       .then((data) => {
-        // ¡LA MAGIA AQUÍ! Arreglamos las fotos antes de guardarlas en el estado
-        const formattedSalones = data.map((salon) => {
-          let pictureUrl = salon.salon_picture;
-          // Si tiene foto y no empieza por "http", se lo ponemos
-          if (pictureUrl && !pictureUrl.startsWith("http")) {
-            pictureUrl = `${BACKEND_URL}${pictureUrl}`;
-          }
-          return {
-            ...salon,
-            salon_picture: pictureUrl,
-          };
-        });
-
-        setSalones(formattedSalones);
+        const formattedData = data.map((salon) => ({
+          ...salon,
+          salon_picture: formatImageUrl(salon.salon_picture),
+        }));
+        setSalones(formattedData);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error cargando salones:", err);
+        console.error("Error en el fetch de salones:", err);
         setLoading(false);
       });
-  }, [location.search]);
+  }, [location.search, formatImageUrl]);
 
   const handleLocalSearch = (e) => {
     if (e.key === "Enter") {
-      navigate(`/salones?search=${localSearch}`);
+      // Al buscar localmente, reiniciamos la búsqueda para evitar conflictos de parámetros antiguos
+      navigate(`/salones?search=${encodeURIComponent(localSearch)}`);
     }
   };
 
+  // --- VARIABLES DE ESTILO ---
+  const pageWrapper = "bg-aura-lavender flex flex-col min-h-screen font-sans";
+  const headerStyles =
+    "border-b border-purple-100 bg-white/80 backdrop-blur-md py-4 shadow-sm sticky top-0 z-20";
+  const searchInputStyles =
+    "w-full h-12 rounded-full border border-purple-100 bg-white pl-12 pr-4 text-base text-aura-text focus:border-purple-300 focus:ring-2 focus:ring-purple-200 outline-none transition-all shadow-inner";
+  const toggleButtonStyles =
+    "flex items-center justify-center gap-2 h-12 px-6 rounded-full bg-white text-aura-plum font-semibold hover:shadow-md transition-all border border-purple-100 shadow-sm";
+
   return (
-    <div className="bg-gray-50 flex flex-col min-h-screen font-sans">
-      <div className="border-b border-gray-200 bg-white py-4 shadow-sm">
+    <div className={pageWrapper}>
+      <div className={headerStyles}>
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex-1 w-full sm:max-w-xl">
-              <div className="relative flex items-center w-full">
-                <div className="absolute left-4 text-gray-400">
-                  <span className="material-symbols-outlined">location_on</span>
-                </div>
+              <div className="relative flex items-center w-full text-purple-300">
+                <span className="material-symbols-outlined absolute left-4">
+                  location_on
+                </span>
                 <input
-                  className="w-full h-12 rounded-lg border border-gray-300 bg-gray-50 pl-12 pr-4 text-base text-[#181411] focus:border-[#f48c25] focus:ring-2 focus:ring-[#f48c25]/50 outline-none transition-all"
-                  placeholder="Introduce tu localidad..."
+                  className={searchInputStyles}
+                  placeholder="¿Dónde quieres ir hoy? (Ciudad o tratamiento)"
                   type="text"
                   value={localSearch}
                   onChange={(e) => setLocalSearch(e.target.value)}
@@ -72,10 +94,9 @@ export default function Salones() {
                 />
               </div>
             </div>
-
             <button
               onClick={() => setViewMode(viewMode === "grid" ? "map" : "grid")}
-              className="flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-[#f48c25]/10 text-[#f48c25] font-bold hover:bg-[#f48c25]/20 transition-colors border border-[#f48c25]/20 whitespace-nowrap w-full sm:w-auto"
+              className={toggleButtonStyles}
             >
               <span className="material-symbols-outlined">
                 {viewMode === "grid" ? "map" : "grid_view"}
@@ -86,46 +107,46 @@ export default function Salones() {
         </div>
       </div>
 
-      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-[#181411] text-3xl font-black leading-tight">
+      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <header className="mb-10 text-center sm:text-left">
+          <h1 className="text-aura-plum text-4xl font-serif leading-tight">
             {location.search
-              ? "Resultados de tu búsqueda"
-              : "Todos los salones"}
+              ? "Tu búsqueda personalizada"
+              : "Nuestra Selección de Espacios"}
           </h1>
-          <p className="text-gray-500 mt-2">
-            Explora los mejores centros de belleza y bienestar cerca de ti.
+          <p className="text-gray-500 mt-2 font-light">
+            Explora el bienestar y la belleza cerca de ti.
           </p>
-        </div>
+        </header>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f48c25]"></div>
+          <div className="flex justify-center items-center h-64 italic text-purple-400 animate-pulse">
+            Cargando experiencias...
           </div>
         ) : (
           <>
             {viewMode === "map" ? (
-              <div className="w-full h-[600px] rounded-xl overflow-hidden shadow-md border border-gray-200">
+              <div className="w-full h-[600px] rounded-3xl overflow-hidden shadow-pearl border border-purple-50">
                 <iframe
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
                   loading="lazy"
                   allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(localSearch || "Madrid, España")}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(localSearch || "España")}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
                 ></iframe>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                 {salones.length > 0 ? (
                   salones.map((salon) => (
                     <SalonCard key={salon.id} salon={salon} />
                   ))
                 ) : (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-gray-500 text-lg">
-                      No hemos encontrado salones con ese nombre.
+                  <div className="col-span-full text-center py-20 bg-white rounded-3xl border border-dashed border-purple-200">
+                    <p className="text-gray-500 font-serif italic text-lg">
+                      No hay resultados para esta búsqueda, prueba con otro
+                      término.
                     </p>
                   </div>
                 )}

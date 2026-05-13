@@ -11,14 +11,27 @@ export default function SalonCard({ salon }) {
       : `${backendUrl}${salon.salon_picture}`
     : "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800";
 
+  // --- VARIABLES DE ESTILOS PREMIUM ---
+  const cardStyles =
+    "bg-white rounded-3xl p-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(200,160,255,0.15)] transition-all duration-500 group border border-purple-50/50";
+  const imageContainer = "relative h-56 rounded-2xl overflow-hidden mb-5";
+  const badgeStyles =
+    "absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1 text-xs font-semibold text-aura-plum shadow-sm";
+  const titleStyles = "text-2xl font-serif text-aura-plum px-2 mb-1.5";
+  const locationStyles =
+    "text-gray-500 text-sm flex items-center gap-1 px-2 mb-6 font-light";
+  const pearlButtonStyles =
+    "w-full block py-3 bg-gradient-to-r from-purple-100 via-white to-fuchsia-100 border border-white/60 shadow-pearl group-hover:shadow-pearl-hover text-aura-plum font-semibold rounded-full text-center transition-all duration-300";
+
   return (
     <Link
       to={`/salones/${salon.id}`}
       state={{ salon: salon }}
       className="block"
     >
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer">
-        <div className="relative h-48 overflow-hidden">
+      <div className={cardStyles}>
+        {/* Imagen del Salón con Badge de Puntuación */}
+        <div className={imageContainer}>
           <img
             src={imageUrl}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -28,10 +41,9 @@ export default function SalonCard({ salon }) {
                 "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800";
             }}
           />
-          {/* Badge de puntuación sobre la imagen preparado para la nota real */}
-          <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-lg flex items-center gap-1 text-xs font-black text-[#181411] shadow-sm">
+          <div className={badgeStyles}>
             <span
-              className="material-symbols-outlined text-yellow-400 text-[16px] filled"
+              className="material-symbols-outlined text-yellow-500 text-[16px] filled"
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
               star
@@ -42,29 +54,22 @@ export default function SalonCard({ salon }) {
           </div>
         </div>
 
-        <div className="p-5">
-          <h3 className="font-black text-xl mb-1.5 text-[#181411]">
-            {salon.business_name || "Salón sin nombre"}
-          </h3>
-          <p className="text-gray-500 text-sm mb-4 flex items-center gap-1.5 font-medium">
-            <span className="material-symbols-outlined text-[18px]">
-              location_on
-            </span>
-            <span className="truncate">
-              {salon.business_address || "Dirección no disponible"}
-            </span>
-          </p>
+        {/* Información del Salón */}
+        <h3 className={titleStyles}>
+          {salon.business_name || "Salón sin nombre"}
+        </h3>
 
-          {/* Línea divisoria y botón alineado a la derecha */}
-          <div className="flex justify-end items-center mt-2 border-t border-gray-100 pt-4">
-            <button className="text-sm font-black text-[#f48c25] group-hover:text-orange-600 transition-colors flex items-center gap-1">
-              Ver servicios
-              <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
-                arrow_forward
-              </span>
-            </button>
-          </div>
-        </div>
+        <p className={locationStyles}>
+          <span className="material-symbols-outlined text-[18px] opacity-70">
+            location_on
+          </span>
+          <span className="truncate">
+            {salon.business_address || "Dirección no disponible"}
+          </span>
+        </p>
+
+        {/* Botón Perla Integrado */}
+        <div className={pearlButtonStyles}>Ver detalles</div>
       </div>
     </Link>
   );

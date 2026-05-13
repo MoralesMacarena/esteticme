@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 export default function PostCard({ post }) {
-  // Función para limpiar HTML (la ponemos aquí para que cada card sepa gestionarlo)
+  // Mantenemos tu lógica de limpieza de HTML
   const stripHtml = (html) => {
     if (!html) return "";
     const doc = new DOMParser().parseFromString(html, "text/html");
@@ -9,38 +9,45 @@ export default function PostCard({ post }) {
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 items-center border-b border-gray-50 pb-16 last:border-0 group">
-      {/* Imagen */}
-      <div className="w-full md:w-1/3 overflow-hidden rounded-2xl shadow-sm">
+    <div className="flex flex-col md:flex-row gap-10 items-center border-b border-purple-50 pb-16 last:border-0 group">
+      {/* Imagen con bordes más suaves y efecto zoom */}
+      <div className="w-full md:w-2/5 overflow-hidden rounded-[2rem] shadow-sm bg-white">
         <img
           src={post.image || "https://via.placeholder.com/400x250"}
           alt={post.title}
-          className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-1000 ease-in-out"
         />
       </div>
 
-      {/* Info */}
-      <div className="w-full md:w-2/3">
-        <span className="text-xs font-black text-[#f48c25] uppercase tracking-widest">
-          {post.category_name || "General"}
-        </span>
-        <h3 className="text-2xl md:text-3xl font-black mt-2 mb-3 text-[#181411] group-hover:text-[#f48c25] transition-colors">
+      {/* Info con tipografía editorial */}
+      <div className="w-full md:w-3/5">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-[10px] font-bold text-purple-400 uppercase tracking-[0.2em] bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
+            {post.category_name || "Tendencias"}
+          </span>
+          <span className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">
+            {new Date(post.created_at).toLocaleDateString("es-ES", {
+              month: "long",
+              year: "numeric",
+            })}
+          </span>
+        </div>
+
+        <h3 className="text-3xl font-serif text-aura-plum mb-4 leading-tight group-hover:text-purple-600 transition-colors duration-300">
           {post.title}
         </h3>
-        <p className="text-gray-500 line-clamp-2 mb-6 leading-relaxed">
-          {stripHtml(post.content)}
+
+        <p className="text-gray-500 line-clamp-2 mb-8 leading-relaxed font-light text-sm italic">
+          "{stripHtml(post.content)}"
         </p>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <Link
             to={`/blog/${post.slug}`}
-            className="text-[#181411] font-black text-sm border-b-2 border-orange-200 hover:border-[#f48c25] transition-all pb-1"
+            className="text-aura-plum font-bold text-xs uppercase tracking-[0.15em] border-b border-purple-200 hover:border-aura-plum transition-all pb-2"
           >
             Sigue leyendo
           </Link>
-          <span className="text-xs text-gray-400 font-bold">
-            {new Date(post.created_at).toLocaleDateString()}
-          </span>
         </div>
       </div>
     </div>

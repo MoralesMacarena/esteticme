@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SalonCard from "../components/SalonCard";
-import LatestBlogPosts from "../components/LatestBlogPosts"; // <-- IMPORTACIÓN
+import LatestBlogPosts from "../components/LatestBlogPosts";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -63,10 +63,20 @@ export default function Home() {
     }
   };
 
+  // --- VARIABLES DE ESTILOS (Para mantener el JSX limpio) ---
+  const pearlButtonStyles =
+    "w-full sm:w-auto px-10 h-12 bg-gradient-to-r from-purple-100 via-white to-fuchsia-100 border border-white/60 shadow-pearl hover:shadow-pearl-hover text-aura-plum font-semibold rounded-full transition-all duration-300";
+  const inputStyles =
+    "w-full h-12 rounded-full border border-white/40 px-6 focus:ring-2 focus:ring-purple-300 outline-none bg-white/80 backdrop-blur-sm text-aura-text placeholder-gray-500 shadow-inner";
+  const sectionTitleStyles =
+    "text-aura-plum text-4xl sm:text-5xl font-serif mb-4 text-center tracking-wide";
+  const sectionSubtitleStyles =
+    "text-gray-500 text-center font-light tracking-wider uppercase text-sm mb-12";
+
   return (
     <>
-      {/* HERO SECTION */}
-      <div className="relative w-full h-[500px] flex items-center justify-center overflow-hidden">
+      {/* HERO SECTION PREMIUM */}
+      <div className="relative w-full h-[600px] flex items-center justify-center overflow-hidden bg-aura-plum">
         {slides.map((slide, index) => (
           <div
             key={index}
@@ -75,52 +85,54 @@ export default function Home() {
             }`}
           >
             <div
-              className="absolute inset-0 bg-cover bg-center"
+              className="absolute inset-0 bg-cover bg-center transform scale-105"
               style={{ backgroundImage: `url("${slide.image}")` }}
             ></div>
-            <div className="absolute inset-0 bg-black/40"></div>
+            {/* Gradiente oscuro para que el texto blanco siempre se lea bien */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/60"></div>
           </div>
         ))}
 
-        <div className="relative z-10 w-full max-w-3xl px-4 text-center">
-          <h1 className="text-white text-4xl sm:text-5xl font-black mb-6 drop-shadow-md">
+        <div className="relative z-10 w-full max-w-4xl px-4 flex flex-col items-center mt-10">
+          <h1 className="text-white text-5xl sm:text-6xl font-serif mb-8 text-center drop-shadow-lg tracking-wide">
             {slides[currentSlide].title}
           </h1>
 
+          {/* Buscador estilo Glassmorphism */}
           <form
             onSubmit={handleSearch}
-            className="bg-white p-4 rounded-xl shadow-lg flex flex-col sm:flex-row gap-2"
+            className="w-full max-w-3xl bg-white/20 backdrop-blur-md p-3 rounded-3xl sm:rounded-full border border-white/30 shadow-2xl flex flex-col sm:flex-row gap-3"
           >
             <input
-              className="w-full h-12 rounded-lg border border-gray-300 px-4 focus:ring-2 focus:ring-primary outline-none"
+              className={inputStyles}
               type="text"
-              placeholder="¿Qué tratamiento buscas?"
+              placeholder="¿Qué tratamiento buscas hoy?"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <input
-              className="w-full h-12 rounded-lg border border-gray-300 px-4 focus:ring-2 focus:ring-primary outline-none"
+              className={inputStyles}
               type="text"
-              placeholder="Ubicación"
+              placeholder="¿En qué ciudad?"
               value={locationTerm}
               onChange={(e) => setLocationTerm(e.target.value)}
             />
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-8 h-12 bg-primary text-white font-bold rounded-lg hover:bg-orange-600 transition-colors"
-            >
-              Buscar
+            <button type="submit" className={pearlButtonStyles}>
+              Descubrir
             </button>
           </form>
         </div>
 
-        <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
+        {/* Indicadores del Slider elegantes */}
+        <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-3">
           {slides.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentSlide(index)}
-              className={`h-2.5 rounded-full transition-all duration-300 ${
-                index === currentSlide ? "bg-primary w-8" : "bg-white/60 w-2.5"
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                index === currentSlide
+                  ? "bg-white w-10 shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+                  : "bg-white/40 w-4 hover:bg-white/60"
               }`}
             />
           ))}
@@ -128,22 +140,20 @@ export default function Home() {
       </div>
 
       {/* SECCIÓN DE SALONES DESTACADOS */}
-      <div className="w-full max-w-7xl mx-auto px-4 py-16">
-        <div className="mb-8">
-          <h2 className="text-[#181411] text-3xl font-bold">
-            Salones Destacados
-          </h2>
-          <p className="text-gray-500">
-            Selección de los mejores valorados (+4.5★)
+      <div className="w-full max-w-7xl mx-auto px-4 py-20">
+        <div className="mb-12">
+          <h2 className={sectionTitleStyles}>Premium Salons & Spas</h2>
+          <p className={sectionSubtitleStyles}>
+            Selección exclusiva de los mejor valorados
           </p>
         </div>
 
         {loading ? (
           <div className="flex justify-center py-10">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-300"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {salones.map((salon) => (
               <SalonCard key={salon.id} salon={salon} />
             ))}
@@ -151,16 +161,18 @@ export default function Home() {
         )}
 
         {!loading && salones.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-            <p className="text-gray-500 italic">
-              Vaya, no hay salones tan top ahora mismo...
+          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-purple-200 shadow-sm">
+            <p className="text-gray-500 font-serif italic text-lg">
+              Explorando nuevos espacios de bienestar para ti...
             </p>
           </div>
         )}
       </div>
 
-      {/* 🔥 ¡NUEVA SECCIÓN DE BLOG! 🔥 */}
-      <LatestBlogPosts />
+      {/* SECCIÓN DE BLOG */}
+      <div className="bg-white/50 border-t border-purple-100">
+        <LatestBlogPosts />
+      </div>
     </>
   );
 }
