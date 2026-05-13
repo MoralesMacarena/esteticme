@@ -1,59 +1,76 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from rest_framework.decorators import action
+
 from .models import Post, Comment
 from .serializers import PostSerializer, CommentSerializer
 
+
 class PostViewSet(viewsets.ModelViewSet):
-    # 1. QUITAMOS el queryset estático y usamos get_queryset dinámico
+    """
+    ViewSet para la gestión de los artículos (Posts) del blog.
+    Utiliza el 'slug' como identificador en las URLs para mejorar el SEO.
+    """
     serializer_class = PostSerializer
     lookup_field = 'slug'
 
     def get_queryset(self):
-        # Si el usuario está logueado y es admin, le devolvemos TODOS los posts (incluidos borradores)
+        """
+        Devuelve el QuerySet de posts evaluando los permisos del usuario.
+        Los administradores tienen acceso a todo el catálogo (incluyendo borradores),
+        mientras que el público general solo recibe los posts publicados.
+        """
         if self.request.user.is_authenticated and (self.request.user.role == 'admin' or self.request.user.is_superuser):
             return Post.objects.all().order_by('-created_at')
         
-        # Para el resto del mundo, solo los que están publicados
         return Post.objects.filter(is_published=True).order_by('-created_at')
 
     def get_permissions(self):
-        # Listar y ver detalle: Permitido a todos
+        """
+        Aplica restricciones a nivel de acción:
+        - Lectura (list, retrieve): Acceso público.
+        - Escritura/Modificación (create, update, destroy): Solo administradores.
+        """
         if self.action in ['list', 'retrieve']:
             return [permissions.AllowAny()]
-        # El resto (crear, editar, borrar): Solo Staff/Admin
         return [permissions.IsAdminUser()]
-
-    # ¡HEMOS ELIMINADO perform_create DE AQUÍ! 
-    # Ahora Django guardará automáticamente el 'author' y 'category' que le mandemos desde React.
 
 
 class CommentViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para gestionar el sistema de comentarios asociados a los posts.
+    """
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 
     def get_permissions(self):
-        # 1. Ver comentarios: Todo el mundo
+        """
+        Aplica un sistema de permisos escalonado:
+        - Lectura pública.
+        - Creación y borrado propio para usuarios autenticados.
+        - Control total para administradores.
+        """
         if self.action in ['list', 'retrieve']:
             return [permissions.AllowAny()]
         
-        # 2. Crear y BORRAR: Cualquier usuario logueado (la seguridad extra va abajo)
         if self.action in ['create', 'destroy']:
             return [permissions.IsAuthenticated()]
             
-        # 3. Editar (update) u otros: Sigue siendo solo para Admin
         return [permissions.IsAdminUser()]
 
     def perform_create(self, serializer):
-        # Asignamos el usuario logueado al comentario
+        """
+        Vincula automáticamente el comentario creado con el usuario que hace la petición.
+        """
         serializer.save(user=self.request.user)
 
-    # --- NUEVA FUNCIÓN PARA EL BORRADO SEGURO ---
     def destroy(self, request, *args, **kwargs):
+        """
+        Sobrescribe la lógica de borrado por defecto para aplicar validación de propiedad.
+        Un comentario solo puede ser eliminado por su autor original o por un administrador.
+        """
         comment = self.get_object() 
         
         is_admin = getattr(request.user, 'role', None) == 'admin' or request.user.is_superuser
-        # 👇 LA CLAVE: Comparamos directamente los números de ID
         is_owner = comment.user.id == request.user.id
 
         if is_admin or is_owner:

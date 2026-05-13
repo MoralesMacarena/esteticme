@@ -1,20 +1,28 @@
 from rest_framework import serializers
+
 from .models import Post, Comment
 
+
 class CommentSerializer(serializers.ModelSerializer):
+    """
+    Serializador para los comentarios del blog.
+    Extrae dinámicamente el nombre completo del autor para simplificar
+    el renderizado en el frontend.
+    """
     user_name = serializers.ReadOnlyField(source='user.full_name')
 
     class Meta:
         model = Comment
-        # 1. Hemos añadido 'user' justo antes de 'user_name'
         fields = ['id', 'post', 'user', 'user_name', 'comment', 'created_at']
-        # 2. Añadimos esta línea para que Django no exija el ID del usuario al crear el comentario
         read_only_fields = ['user']
 
+
 class PostSerializer(serializers.ModelSerializer):
-    # Ya no necesitamos author_name porque author es un texto directamente
+    """
+    Serializador para las entradas (Posts) del blog.
+    Anida los comentarios asociados y calcula el total de respuestas recibidas.
+    """
     category_name = serializers.ReadOnlyField(source='category.name')
-    
     comments = CommentSerializer(many=True, read_only=True)
     comment_count = serializers.IntegerField(source='comments.count', read_only=True)
 
