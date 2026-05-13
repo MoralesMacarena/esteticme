@@ -4,15 +4,14 @@ import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 
 export default function EditPost() {
-  const { slug } = useParams(); // Sacamos el slug de la URL para saber qué post editar
+  const { slug } = useParams();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true); // Para el spinner de carga inicial
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
   const [categories, setCategories] = useState([]);
 
-  // Estado del formulario
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -23,21 +22,20 @@ export default function EditPost() {
   });
 
   const [imageFile, setImageFile] = useState(null);
-  const [currentImage, setCurrentImage] = useState(null); // Para mostrar la imagen que ya tiene
+  const [currentImage, setCurrentImage] = useState(null);
 
   const token = localStorage.getItem("access_token");
 
-  // 1. Cargar las categorías y los datos del Post al entrar
   useEffect(() => {
     // Cargar categorías
-    fetch("http://127.0.0.1:8000/api/bookings/categories/")
+    fetch("http://127.0.0.1:8000/api/bookings/categorias/")
       .then((res) => res.json())
       .then((data) =>
         setCategories(Array.isArray(data) ? data : data.results || []),
       )
       .catch(console.error);
 
-    // Cargar los datos del post a editar
+    // Cargar datos del post
     fetch(`http://127.0.0.1:8000/api/blog/posts/${slug}/`)
       .then((res) => {
         if (!res.ok) throw new Error("No se pudo cargar el artículo");
@@ -50,12 +48,12 @@ export default function EditPost() {
           content: data.content,
           is_published: data.is_published,
           author: data.author,
-          category: data.category || "", // Si es null, lo dejamos vacío
+          category: data.category || "",
         });
         setCurrentImage(data.image);
         setInitialLoading(false);
       })
-      .catch((err) => {
+      .catch(() => {
         setError("Error al cargar el artículo.");
         setInitialLoading(false);
       });
@@ -66,7 +64,7 @@ export default function EditPost() {
       [{ header: [1, 2, 3, false] }],
       ["bold", "italic", "underline", "strike"],
       [{ list: "ordered" }, { list: "bullet" }],
-      ["link", "blockquote", "code-block"],
+      ["link", "blockquote"],
       ["clean"],
     ],
   };
@@ -78,182 +76,206 @@ export default function EditPost() {
 
     const data = new FormData();
     data.append("title", formData.title);
-    // Nota: A veces es mejor no dejar cambiar el slug en edición para no romper links viejos,
-    // pero si lo quieres enviar, lo dejamos:
     data.append("slug", formData.slug);
     data.append("content", formData.content);
     data.append("is_published", formData.is_published);
     data.append("author", formData.author);
-
-    // Si tiene categoría la enviamos, si la quitaron enviamos vacío para que Django ponga null
     data.append("category", formData.category);
 
-    // Solo enviamos la imagen si el usuario ha seleccionado una nueva
     if (imageFile) {
       data.append("image", imageFile);
     }
 
-    // OJO: Usamos PATCH en lugar de POST para actualizar parcialmente
     fetch(`http://127.0.0.1:8000/api/blog/posts/${slug}/`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },
       body: data,
     })
       .then(async (res) => {
-        if (!res.ok) {
-          const errData = await res.json();
-          console.error("Detalles del error:", errData);
-          throw new Error("Error al actualizar el post");
-        }
+        if (!res.ok) throw new Error("Error al actualizar el post");
         return res.json();
       })
       .then((data) => {
         setLoading(false);
-        navigate(`/blog/${data.slug}`); // Volvemos a ver el artículo actualizado
+        navigate(`/blog/${data.slug}`);
       })
-      .catch((err) => {
+      .catch(() => {
         setError("Error al guardar los cambios.");
         setLoading(false);
       });
   };
 
-  if (initialLoading) {
+  // --- VARIABLES DE ESTILO AURA ---
+  const inputStyles =
+    "w-full bg-white/60 border border-purple-50 rounded-2xl px-6 py-4 text-aura-plum font-medium focus:ring-4 focus:ring-purple-100 outline-none transition-all";
+  const labelStyles =
+    "block text-[10px] font-bold text-purple-400 mb-2 uppercase tracking-[0.2em] ml-2";
+  const pearlBtn =
+    "w-full bg-gradient-to-r from-purple-100 via-white to-fuchsia-100 border border-white/60 shadow-pearl text-aura-plum py-5 rounded-2xl font-bold text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg";
+
+  if (initialLoading)
     return (
-      <div className="text-center p-20 font-bold text-xl text-[#181411]">
-        Cargando editor...
+      <div className="flex flex-col justify-center items-center h-screen bg-aura-lavender">
+        <div className="w-12 h-12 border-4 border-purple-100 border-t-aura-plum rounded-full animate-spin mb-4"></div>
+        <p className="font-serif italic text-aura-plum">
+          Preparando el editor...
+        </p>
       </div>
     );
-  }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12 font-display">
-      <div className="flex items-center gap-4 mb-8">
-        <Link
-          to={`/blog/${slug}`}
-          className="text-gray-400 hover:text-[#f48c25] transition-colors"
+    <div className="bg-aura-lavender min-h-screen pb-20 font-sans">
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        {/* ENCABEZADO */}
+        <div className="flex items-center gap-6 mb-12">
+          <Link
+            to={`/blog/${slug}`}
+            className="p-3 bg-white rounded-full text-purple-300 hover:text-aura-plum shadow-sm transition-colors"
+          >
+            <span className="material-symbols-outlined text-2xl">
+              arrow_back
+            </span>
+          </Link>
+          <h1 className="text-5xl font-serif text-aura-plum tracking-tight">
+            Editar Historia
+          </h1>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-100 text-red-400 p-6 rounded-[2rem] mb-8 flex items-center gap-3">
+            <span className="material-symbols-outlined">error</span>
+            <span className="font-medium">{error}</span>
+          </div>
+        )}
+
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white/40 backdrop-blur-md p-10 md:p-16 rounded-[4rem] border border-white shadow-pearl space-y-10"
         >
-          <span className="material-symbols-outlined text-3xl">arrow_back</span>
-        </Link>
-        <h1 className="text-4xl font-black text-[#181411]">Editar Artículo</h1>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-6 font-bold">
-          {error}
-        </div>
-      )}
-
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8"
-      >
-        <div className="grid md:grid-cols-2 gap-8">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">
-              Título
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-[#181411] text-xl font-bold focus:ring-2 focus:ring-[#f48c25] outline-none"
-            />
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className={labelStyles}>Título</label>
+              <input
+                type="text"
+                required
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                className={inputStyles + " text-xl font-serif italic"}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className={labelStyles}>Autor</label>
+              <input
+                type="text"
+                required
+                value={formData.author}
+                onChange={(e) =>
+                  setFormData({ ...formData, author: e.target.value })
+                }
+                className={inputStyles}
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">
-              Autor / Créditos
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.author}
-              onChange={(e) =>
-                setFormData({ ...formData, author: e.target.value })
-              }
-              className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-[#181411] text-xl font-bold focus:ring-2 focus:ring-[#f48c25] outline-none"
-            />
-          </div>
-        </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">
-              Categoría (Opcional)
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
-              className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-[#181411] font-bold focus:ring-2 focus:ring-[#f48c25] outline-none cursor-pointer"
-            >
-              <option value="">Ninguna / General</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className={labelStyles}>Categoría</label>
+              <select
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                className={inputStyles + " cursor-pointer appearance-none"}
+              >
+                <option value="">General</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className={labelStyles}>Imagen de Portada</label>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImageFile(e.target.files[0])}
+                  className="w-full opacity-0 absolute inset-0 cursor-pointer z-10"
+                />
+                <div
+                  className={
+                    inputStyles +
+                    " flex items-center gap-3 " +
+                    (imageFile ? "text-aura-plum" : "text-purple-200")
+                  }
+                >
+                  <span className="material-symbols-outlined">refresh</span>
+                  <span className="text-sm truncate">
+                    {imageFile
+                      ? imageFile.name
+                      : currentImage
+                        ? "Cambiar imagen actual"
+                        : "Subir imagen..."}
+                  </span>
+                </div>
+              </div>
+              {currentImage && !imageFile && (
+                <div className="mt-4 px-4 py-2 bg-white/50 rounded-xl border border-purple-50 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-xs text-purple-300">
+                    image
+                  </span>
+                  <span className="text-[10px] uppercase font-bold text-purple-300 tracking-widest">
+                    Imagen actual conservada
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">
-              Actualizar Imagen
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImageFile(e.target.files[0])}
-              className="w-full bg-gray-50 rounded-2xl px-6 py-4 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#181411] file:text-white hover:file:bg-gray-800 cursor-pointer"
-            />
-            {currentImage && !imageFile && (
-              <p className="text-xs text-gray-400 mt-2 font-bold flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">image</span>
-                Imagen actual guardada
+
+          <div className="space-y-4">
+            <label className={labelStyles}>Contenido</label>
+            <div className="rounded-[2.5rem] border border-purple-50 overflow-hidden bg-white min-h-[400px]">
+              <ReactQuill
+                theme="snow"
+                value={formData.content}
+                onChange={(val) => setFormData({ ...formData, content: val })}
+                modules={modules}
+                className="h-full border-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-6 bg-white/80 p-8 rounded-[2.5rem] border border-purple-50">
+            <div className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={formData.is_published}
+                onChange={(e) =>
+                  setFormData({ ...formData, is_published: e.target.checked })
+                }
+              />
+              <div className="w-11 h-6 bg-purple-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-aura-plum"></div>
+            </div>
+            <div>
+              <p className="text-aura-plum font-bold text-sm">
+                Estado de publicación
               </p>
-            )}
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest">
+                Marcar para que el post sea visible
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-bold text-gray-700 uppercase tracking-wide">
-            Contenido del artículo
-          </label>
-          <div className="rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-            <ReactQuill
-              theme="snow"
-              value={formData.content}
-              onChange={(value) => setFormData({ ...formData, content: value })}
-              modules={modules}
-              className="bg-white"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 bg-orange-50 p-6 rounded-2xl border border-orange-100">
-          <input
-            type="checkbox"
-            className="w-5 h-5 accent-[#f48c25] cursor-pointer"
-            checked={formData.is_published}
-            onChange={(e) =>
-              setFormData({ ...formData, is_published: e.target.checked })
-            }
-          />
-          <span className="font-bold text-[#181411]">
-            Publicado (Visible para todos)
-          </span>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-[#181411] text-white py-5 rounded-2xl font-black text-lg hover:bg-[#f48c25] transition-colors"
-        >
-          {loading ? "Actualizando..." : "Actualizar Artículo"}
-        </button>
-      </form>
+          <button type="submit" disabled={loading} className={pearlBtn}>
+            {loading ? "Actualizando..." : "Guardar Cambios"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import ServiceCard from "../components/ServiceCard"; // <-- Importamos tu nuevo componente
+import ServiceCard from "../components/ServiceCard";
 
 export default function Tratamientos() {
   const [tratamientos, setTratamientos] = useState([]);
@@ -9,7 +9,6 @@ export default function Tratamientos() {
 
   const BACKEND_URL = "http://127.0.0.1:8000";
 
-  // Imágenes de stock preciosas para ir rotando en las tarjetas
   const stockImages = [
     "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1000&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1585747685350-31c216327617?q=80&w=1000&auto=format&fit=crop",
@@ -28,7 +27,9 @@ export default function Tratamientos() {
         ]);
 
         if (resTratamientos.ok) {
-          const dataTratamientos = await resTratamientos.json();
+          const dataTratamientos = (await resTratamientos.ok)
+            ? await resTratamientos.json()
+            : [];
           setTratamientos(
             Array.isArray(dataTratamientos)
               ? dataTratamientos
@@ -50,11 +51,9 @@ export default function Tratamientos() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
-  // Lógica de filtrado SOLO por pestaña (categoría)
   const filteredTratamientos = tratamientos.filter((t) => {
     return (
       selectedCategory === "Todos" ||
@@ -63,20 +62,22 @@ export default function Tratamientos() {
     );
   });
 
+  // --- VARIABLES DE ESTILO ---
+  const navBtnBase =
+    "whitespace-nowrap text-xs uppercase tracking-[0.2em] px-4 py-2 rounded-full transition-all duration-300";
+  const navBtnActive = "bg-aura-plum text-white shadow-lg font-bold";
+  const navBtnInactive =
+    "text-aura-plum/60 hover:text-aura-plum hover:bg-white/50 font-medium";
+
   return (
-    <div className="bg-gray-50 font-display flex flex-col min-h-screen">
-      {/* SECCIÓN DE FILTROS (Solo el menú dinámico) */}
-      <div className="bg-white border-b border-gray-100 shadow-sm pt-4 pb-2">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Menú de Categorías Dinámico */}
-          <nav className="flex items-center justify-center gap-8 overflow-x-auto no-scrollbar py-3">
+    <div className="bg-aura-lavender font-sans flex flex-col min-h-screen">
+      {/* SECCIÓN DE NAVEGACIÓN DE CATEGORÍAS */}
+      <div className="bg-white/40 backdrop-blur-md border-b border-purple-100 sticky top-20 z-40">
+        <div className="mx-auto max-w-7xl px-4">
+          <nav className="flex items-center justify-center gap-4 overflow-x-auto no-scrollbar py-6">
             <button
               onClick={() => setSelectedCategory("Todos")}
-              className={`whitespace-nowrap text-sm px-1 pb-1 transition-colors ${
-                selectedCategory === "Todos"
-                  ? "font-bold text-[#f48c25] border-b-2 border-[#f48c25]"
-                  : "font-medium text-gray-600 hover:text-[#f48c25]"
-              }`}
+              className={`${navBtnBase} ${selectedCategory === "Todos" ? navBtnActive : navBtnInactive}`}
             >
               Todos
             </button>
@@ -85,11 +86,7 @@ export default function Tratamientos() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.name)}
-                className={`whitespace-nowrap text-sm px-1 pb-1 transition-colors ${
-                  selectedCategory === cat.name
-                    ? "font-bold text-[#f48c25] border-b-2 border-[#f48c25]"
-                    : "font-medium text-gray-600 hover:text-[#f48c25]"
-                }`}
+                className={`${navBtnBase} ${selectedCategory === cat.name ? navBtnActive : navBtnInactive}`}
               >
                 {cat.name}
               </button>
@@ -100,24 +97,37 @@ export default function Tratamientos() {
 
       {/* CONTENIDO PRINCIPAL */}
       <main className="flex-grow">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <h1 className="text-[#181411] text-3xl font-bold tracking-tight text-center pb-8 pt-4">
-            {selectedCategory === "Todos"
-              ? "Los mejores tratamientos cerca de ti"
-              : `Los mejores servicios de ${selectedCategory}`}
-          </h1>
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <header className="max-w-3xl mx-auto text-center mb-16">
+            <h1 className="text-aura-plum text-4xl md:text-5xl font-serif tracking-tight mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {selectedCategory === "Todos"
+                ? "Experiencias de Bienestar"
+                : `Especialistas en ${selectedCategory}`}
+            </h1>
+            <p className="text-gray-500 font-light italic">
+              Seleccionamos los mejores rituales de belleza para tu cuidado
+              personal.
+            </p>
+          </header>
 
           {loading ? (
-            <div className="text-center py-12 text-[#f48c25] font-bold">
-              Cargando tratamientos...
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-12 h-12 border-4 border-purple-100 border-t-aura-plum rounded-full animate-spin mb-4"></div>
+              <p className="font-serif italic text-aura-plum">
+                Preparando tu experiencia...
+              </p>
             </div>
           ) : filteredTratamientos.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              No hemos encontrado tratamientos que coincidan con tu filtro.
+            <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] p-20 text-center border border-dashed border-purple-200">
+              <span className="material-symbols-outlined text-5xl text-purple-200 mb-4">
+                search_off
+              </span>
+              <p className="text-aura-plum font-serif text-xl italic">
+                No hemos encontrado servicios en esta categoría actualmente.
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {/* MAPEAMOS USANDO TU NUEVO COMPONENTE */}
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-in fade-in duration-1000">
               {filteredTratamientos.map((t, index) => (
                 <ServiceCard
                   key={t.id}
