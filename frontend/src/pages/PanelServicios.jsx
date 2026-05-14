@@ -9,14 +9,14 @@ export default function PanelServicios() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- ESTADOS PARA MODALES ---
+  // --- ESTADOS PARA MODALES (Lógica intacta) ---
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
 
   const [editingService, setEditingService] = useState(null);
   const [editingDay, setEditingDay] = useState(null);
 
-  // --- FORMULARIOS ---
+  // --- FORMULARIOS (Lógica intacta) ---
   const [serviceForm, setServiceForm] = useState({
     name: "",
     description: "",
@@ -32,7 +32,6 @@ export default function PanelServicios() {
     end_time: "18:00",
   });
 
-  // Mapeo de días para Django (0=Lunes, 6=Domingo)
   const daysMapping = [
     { id: 0, name: "Lunes" },
     { id: 1, name: "Martes" },
@@ -73,7 +72,7 @@ export default function PanelServicios() {
     if (token) fetchData();
   }, []);
 
-  // --- LÓGICA DE SERVICIOS ---
+  // --- HANDLERS SERVICIOS ---
   const openServiceModal = (service = null) => {
     if (service) {
       setEditingService(service);
@@ -127,7 +126,7 @@ export default function PanelServicios() {
     }
   };
 
-  // --- LÓGICA DE HORARIOS ---
+  // --- HANDLERS HORARIOS ---
   const openHoursModal = (dayId) => {
     const existing = availabilities.find((a) => a.day_of_week === dayId);
     setEditingDay(dayId);
@@ -193,95 +192,117 @@ export default function PanelServicios() {
     if (res.ok) setAvailabilities(availabilities.filter((a) => a.id !== id));
   };
 
+  // --- VARIABLES DE ESTILO AURA ---
+  const pearlBtn =
+    "bg-gradient-to-r from-purple-100 via-white to-fuchsia-100 border border-white/60 shadow-pearl text-aura-plum font-bold rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]";
+  const inputStyles =
+    "w-full bg-white/80 border border-purple-100 rounded-2xl px-6 py-4 text-aura-plum font-medium focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-purple-200";
+  const labelStyles =
+    "block text-[11px] font-black text-aura-plum/60 mb-2 uppercase tracking-[0.2em] ml-2";
+
   return (
-    <div className="bg-gray-50 min-h-screen font-sans">
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mx-auto max-w-7xl">
+    <div className="bg-aura-lavender min-h-screen font-sans relative overflow-hidden">
+      {/* Decoración de fondo */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-12 relative z-10">
+        <div className="mx-auto max-w-6xl">
           {/* CABECERA */}
-          <div className="mb-8 border-b border-gray-200 pb-4">
+          <div className="mb-10 border-b border-purple-100 pb-8">
             <Link
               to="/panel"
-              className="flex items-center gap-1 text-sm font-bold text-gray-500 hover:text-[#f48c25] mb-3 w-fit transition-colors"
+              className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-aura-plum/60 hover:text-aura-plum mb-4 w-fit transition-all bg-white/40 px-4 py-2 rounded-xl border border-white/60"
             >
               <span className="material-symbols-outlined text-sm">
                 arrow_back
-              </span>{" "}
-              Volver al Panel principal
+              </span>
+              Panel principal
             </Link>
-            <h1 className="text-3xl font-black text-[#181411]">
+            <h1 className="text-5xl font-serif text-aura-plum tracking-tight">
               Catálogo y Horarios
             </h1>
-            <p className="text-gray-500 mt-1">
-              Gestiona lo que ofreces y cuándo estás disponible.
+            <p className="text-gray-500 font-light italic mt-3 text-lg">
+              Define tus servicios y tu tiempo de bienestar.
             </p>
           </div>
 
-          {/* TABS */}
-          <div className="flex gap-4 mb-6 border-b border-gray-200">
+          {/* TABS AURA */}
+          <div className="flex justify-center gap-4 mb-10">
             <button
               onClick={() => setActiveTab("servicios")}
-              className={`pb-3 px-2 font-bold text-sm transition-colors ${activeTab === "servicios" ? "text-[#f48c25] border-b-2 border-[#f48c25]" : "text-gray-500"}`}
+              className={`px-8 py-3 rounded-2xl font-bold transition-all ${activeTab === "servicios" ? "bg-aura-plum text-white shadow-lg" : "bg-white/40 text-aura-plum hover:bg-white/80"}`}
             >
               Mis Servicios
             </button>
             <button
               onClick={() => setActiveTab("horario")}
-              className={`pb-3 px-2 font-bold text-sm transition-colors ${activeTab === "horario" ? "text-[#f48c25] border-b-2 border-[#f48c25]" : "text-gray-500"}`}
+              className={`px-8 py-3 rounded-2xl font-bold transition-all ${activeTab === "horario" ? "bg-aura-plum text-white shadow-lg" : "bg-white/40 text-aura-plum hover:bg-white/80"}`}
             >
-              Mi Horario Semanal
+              Horario Semanal
             </button>
           </div>
 
           {loading ? (
-            <p className="animate-pulse py-10">Cargando configuración...</p>
+            <div className="flex flex-col items-center py-20 animate-pulse">
+              <div className="w-12 h-12 border-4 border-aura-plum border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="font-serif italic text-aura-plum">
+                Sincronizando catálogo...
+              </p>
+            </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white/60 backdrop-blur-xl rounded-[3.5rem] border border-white p-10 shadow-sm">
               {/* VISTA SERVICIOS */}
               {activeTab === "servicios" && (
                 <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Lista de Servicios</h2>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+                    <h2 className="text-3xl font-serif text-aura-plum tracking-tight">
+                      Lista de Servicios
+                    </h2>
                     <button
                       onClick={() => openServiceModal()}
-                      className="bg-[#181411] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition flex items-center gap-2"
+                      className={`${pearlBtn} px-8 py-4 flex items-center gap-2 text-sm uppercase tracking-widest`}
                     >
-                      <span className="material-symbols-outlined text-sm">
+                      <span className="material-symbols-outlined text-lg">
                         add
-                      </span>{" "}
+                      </span>
                       Nuevo Servicio
                     </button>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {services.length === 0 ? (
-                      <p className="text-gray-400 py-4 italic text-center col-span-full">
-                        No tienes servicios creados.
-                      </p>
+                      <div className="col-span-full py-20 text-center bg-white/30 rounded-[2.5rem] border border-dashed border-purple-200">
+                        <p className="text-aura-plum/40 font-serif italic text-xl">
+                          Aún no has diseñado tu carta de servicios.
+                        </p>
+                      </div>
                     ) : (
                       services.map((s) => (
                         <div
                           key={s.id}
-                          className="border border-gray-200 p-4 rounded-lg flex flex-col justify-between hover:border-[#f48c25] transition shadow-sm"
+                          className="bg-white/80 p-8 rounded-[2.5rem] border border-purple-50 flex flex-col justify-between hover:shadow-pearl transition-all group"
                         >
                           <div>
-                            <div className="flex justify-between items-start">
-                              <h3 className="font-bold text-[#181411]">
+                            <div className="flex justify-between items-start mb-4">
+                              <h3 className="font-bold text-aura-plum text-lg leading-tight pr-4">
                                 {s.name}
                               </h3>
-                              <span className="text-xs font-bold text-[#f48c25] bg-orange-50 px-2 py-1 rounded">
+                              <span className="text-[10px] font-black text-purple-400 bg-purple-50 px-3 py-1 rounded-full border border-purple-100 uppercase tracking-widest">
                                 {s.duration_minutes} min
                               </span>
                             </div>
-                            <p className="text-sm text-gray-500 mt-2 line-clamp-2">
-                              {s.description || "Sin descripción"}
+                            <p className="text-sm text-gray-500 font-light italic line-clamp-3 leading-relaxed mb-6">
+                              {s.description ||
+                                "Sin descripción proporcionada."}
                             </p>
                           </div>
-                          <div className="mt-4 flex justify-between items-center pt-2 border-t">
-                            <span className="font-black text-lg">
+                          <div className="flex justify-between items-center pt-6 border-t border-purple-50">
+                            <span className="font-serif text-2xl text-aura-plum">
                               {parseFloat(s.price).toFixed(2)}€
                             </span>
                             <button
                               onClick={() => openServiceModal(s)}
-                              className="text-blue-600 font-bold text-sm hover:underline"
+                              className="text-xs font-black uppercase tracking-[0.2em] text-aura-plum border-b border-purple-200 hover:border-aura-plum transition-all"
                             >
                               Editar
                             </button>
@@ -293,13 +314,13 @@ export default function PanelServicios() {
                 </div>
               )}
 
-              {/* VISTA HORARIOS (ESTA ES LA QUE TE FALTABA) */}
+              {/* VISTA HORARIOS */}
               {activeTab === "horario" && (
                 <div>
-                  <h2 className="text-xl font-bold mb-6">
+                  <h2 className="text-3xl font-serif text-aura-plum tracking-tight mb-10">
                     Disponibilidad Semanal
                   </h2>
-                  <div className="max-w-2xl bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
+                  <div className="max-w-3xl mx-auto space-y-4">
                     {daysMapping.map((day) => {
                       const schedule = availabilities.find(
                         (a) => a.day_of_week === day.id,
@@ -307,32 +328,33 @@ export default function PanelServicios() {
                       return (
                         <div
                           key={day.id}
-                          className="flex items-center justify-between p-4 border-b border-gray-200 last:border-0 bg-white"
+                          className="bg-white/80 p-6 rounded-[2rem] border border-purple-50 flex items-center justify-between group hover:bg-white transition-all"
                         >
-                          <div className="flex items-center gap-4">
-                            <span
-                              className={`w-3 h-3 rounded-full ${schedule ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "bg-gray-300"}`}
-                            ></span>
-                            <span className="font-bold text-[#181411] w-24">
+                          <div className="flex items-center gap-6">
+                            <div
+                              className={`w-3 h-3 rounded-full ${schedule ? "bg-green-400 shadow-[0_0_12px_rgba(74,222,128,0.5)]" : "bg-purple-100"}`}
+                            ></div>
+                            <span className="font-bold text-aura-plum text-lg w-24">
                               {day.name}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-4">
+                          <div className="flex-1 flex justify-center">
                             {schedule ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded border border-gray-200 shadow-sm">
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-black text-aura-plum bg-purple-50 px-4 py-2 rounded-xl border border-purple-100">
                                   {schedule.start_time.substring(0, 5)}
                                 </span>
-                                <span className="text-gray-400">-</span>
-                                <span className="text-sm font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded border border-gray-200 shadow-sm">
+                                <span className="text-purple-200">—</span>
+                                <span className="text-sm font-black text-aura-plum bg-purple-50 px-4 py-2 rounded-xl border border-purple-100">
                                   {schedule.end_time.substring(0, 5)}
                                 </span>
                                 <button
                                   onClick={() =>
                                     deleteAvailability(schedule.id)
                                   }
-                                  className="ml-2 text-red-400 hover:text-red-600 transition-colors"
+                                  className="ml-4 size-10 rounded-xl flex items-center justify-center text-red-300 hover:bg-red-50 hover:text-red-500 transition-all"
+                                  title="Cerrar día"
                                 >
                                   <span className="material-symbols-outlined text-lg">
                                     cancel
@@ -340,15 +362,15 @@ export default function PanelServicios() {
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-sm font-medium text-gray-400 italic">
-                                Cerrado / No configurado
+                              <span className="text-sm font-light text-purple-300 italic tracking-wide">
+                                Establecimiento cerrado
                               </span>
                             )}
                           </div>
 
                           <button
                             onClick={() => openHoursModal(day.id)}
-                            className="bg-gray-100 hover:bg-[#f48c25] hover:text-white text-gray-700 px-3 py-1 rounded text-xs font-bold transition-all shadow-sm"
+                            className="px-6 py-2 bg-white border border-purple-100 text-aura-plum text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-purple-50 transition-all shadow-sm"
                           >
                             {schedule ? "Cambiar" : "Configurar"}
                           </button>
@@ -365,28 +387,23 @@ export default function PanelServicios() {
 
       {/* --- MODAL DE HORARIO --- */}
       {isHoursModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-              <h3 className="text-xl font-bold">
-                Horario: {daysMapping.find((d) => d.id === editingDay)?.name}
+        <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300 border border-white">
+            <div className="p-8 border-b border-purple-50 bg-purple-50/30 flex justify-between items-center">
+              <h3 className="text-2xl font-serif text-aura-plum">
+                {daysMapping.find((d) => d.id === editingDay)?.name}
               </h3>
               <button
                 onClick={() => setIsHoursModalOpen(false)}
-                className="text-gray-400 hover:text-red-500 transition-colors"
+                className="text-purple-300 hover:text-red-400 transition-colors"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <form
-              onSubmit={handleHoursSubmit}
-              className="p-6 flex flex-col gap-6"
-            >
+            <form onSubmit={handleHoursSubmit} className="p-8 space-y-8">
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">
-                    Apertura
-                  </label>
+                  <label className={labelStyles}>Apertura</label>
                   <input
                     type="time"
                     required
@@ -394,13 +411,11 @@ export default function PanelServicios() {
                     onChange={(e) =>
                       setHoursForm({ ...hoursForm, start_time: e.target.value })
                     }
-                    className="w-full border border-gray-300 rounded-lg p-2 font-bold focus:border-[#f48c25] outline-none"
+                    className={inputStyles}
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">
-                    Cierre
-                  </label>
+                  <label className={labelStyles}>Cierre</label>
                   <input
                     type="time"
                     required
@@ -408,15 +423,15 @@ export default function PanelServicios() {
                     onChange={(e) =>
                       setHoursForm({ ...hoursForm, end_time: e.target.value })
                     }
-                    className="w-full border border-gray-300 rounded-lg p-2 font-bold focus:border-[#f48c25] outline-none"
+                    className={inputStyles}
                   />
                 </div>
               </div>
               <button
                 type="submit"
-                className="w-full bg-[#f48c25] text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition shadow-md"
+                className="w-full bg-aura-plum text-white py-5 rounded-[1.5rem] font-bold shadow-lg hover:scale-[1.02] transition-all"
               >
-                Guardar Cambios
+                Guardar Horario
               </button>
             </form>
           </div>
@@ -425,44 +440,37 @@ export default function PanelServicios() {
 
       {/* --- MODAL DE SERVICIO --- */}
       {isServiceModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-              <h3 className="text-xl font-bold">
-                {editingService ? "Editar Servicio" : "Nuevo Servicio"}
+        <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-100 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-white">
+            <div className="p-8 border-b border-purple-50 bg-purple-50/30 flex justify-between items-center">
+              <h3 className="text-3xl font-serif text-aura-plum">
+                {editingService ? "Editar Tratamiento" : "Nuevo Tratamiento"}
               </h3>
               <button
                 onClick={() => setIsServiceModalOpen(false)}
-                className="text-gray-400 hover:text-red-500 transition-colors"
+                className="text-purple-300 hover:text-red-400 transition-colors"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <form
-              onSubmit={handleServiceSubmit}
-              className="p-6 flex flex-col gap-4"
-            >
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-gray-500 uppercase">
-                  Nombre
-                </label>
+            <form onSubmit={handleServiceSubmit} className="p-10 space-y-6">
+              <div>
+                <label className={labelStyles}>Nombre del servicio</label>
                 <input
                   type="text"
-                  placeholder="Ej: Corte de pelo"
+                  placeholder="Ej: Ritual de Hidratación"
                   required
                   value={serviceForm.name}
                   onChange={(e) =>
                     setServiceForm({ ...serviceForm, name: e.target.value })
                   }
-                  className="border border-gray-300 p-2 rounded focus:border-[#f48c25] outline-none"
+                  className={inputStyles}
                 />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-gray-500 uppercase">
-                  Descripción
-                </label>
+              <div>
+                <label className={labelStyles}>Descripción</label>
                 <textarea
-                  placeholder="Qué incluye el servicio..."
+                  placeholder="Describe la experiencia..."
                   value={serviceForm.description}
                   onChange={(e) =>
                     setServiceForm({
@@ -470,66 +478,70 @@ export default function PanelServicios() {
                       description: e.target.value,
                     })
                   }
-                  className="border border-gray-300 p-2 rounded h-20 resize-none focus:border-[#f48c25] outline-none"
+                  className={`${inputStyles} h-32 resize-none leading-relaxed`}
                 />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-gray-500 uppercase">
-                  Categoría
-                </label>
-                <select
-                  required
-                  value={serviceForm.category}
-                  onChange={(e) =>
-                    setServiceForm({ ...serviceForm, category: e.target.value })
-                  }
-                  className="border border-gray-300 p-2 rounded focus:border-[#f48c25] outline-none"
-                >
-                  <option value="">Selecciona una categoría</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-1 flex flex-col gap-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase">
-                    Precio (€)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className={labelStyles}>Categoría</label>
+                  <select
                     required
-                    value={serviceForm.price}
-                    onChange={(e) =>
-                      setServiceForm({ ...serviceForm, price: e.target.value })
-                    }
-                    className="border border-gray-300 p-2 rounded focus:border-[#f48c25] outline-none"
-                  />
-                </div>
-                <div className="flex-1 flex flex-col gap-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase">
-                    Duración (min)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    value={serviceForm.duration_minutes}
+                    value={serviceForm.category}
                     onChange={(e) =>
                       setServiceForm({
                         ...serviceForm,
-                        duration_minutes: e.target.value,
+                        category: e.target.value,
                       })
                     }
-                    className="border border-gray-300 p-2 rounded focus:border-[#f48c25] outline-none"
-                  />
+                    className={inputStyles}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelStyles}>Precio (€)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={serviceForm.price}
+                      onChange={(e) =>
+                        setServiceForm({
+                          ...serviceForm,
+                          price: e.target.value,
+                        })
+                      }
+                      className={inputStyles}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelStyles}>Duración (min)</label>
+                    <input
+                      type="number"
+                      required
+                      value={serviceForm.duration_minutes}
+                      onChange={(e) =>
+                        setServiceForm({
+                          ...serviceForm,
+                          duration_minutes: e.target.value,
+                        })
+                      }
+                      className={inputStyles}
+                    />
+                  </div>
                 </div>
               </div>
+
               <button
                 type="submit"
-                className="bg-[#f48c25] text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition shadow-md mt-2"
+                className="w-full bg-aura-plum text-white py-5 rounded-[2rem] font-bold text-lg shadow-lg hover:scale-[1.02] active:scale-95 transition-all mt-4"
               >
                 Guardar Servicio
               </button>

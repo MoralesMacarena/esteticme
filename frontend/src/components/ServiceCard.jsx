@@ -9,10 +9,14 @@ export default function ServiceCard({ tratamiento, image }) {
   };
 
   // --- VARIABLES DE ESTILO AURA ---
+  // FIX: Añadido overflow-hidden para que nada se salga del borde redondeado de 2rem
   const cardStyles =
-    "flex flex-col rounded-[2rem] p-3 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_15px_35px_rgba(200,160,255,0.15)] transition-all duration-500 border border-purple-50/50 group";
+    "flex flex-col rounded-[2rem] overflow-hidden p-3 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_15px_35px_rgba(200,160,255,0.15)] transition-all duration-500 border border-purple-50/50 group";
+
+  // FIX: La escala (scale) se queda aquí, pero el overflow-hidden lo ponemos en un padre para recortar las esquinas
   const imageStyles =
-    "w-full aspect-video rounded-2xl bg-cover bg-center overflow-hidden mb-4 transition-transform duration-700 group-hover:scale-[1.02]";
+    "w-full aspect-video bg-cover bg-center transition-transform duration-700 group-hover:scale-[1.03]";
+
   const categoryBadge =
     "text-[10px] font-bold uppercase tracking-[0.2em] text-purple-400 bg-purple-50 px-3 py-1 rounded-full border border-purple-100";
   const pearlButton =
@@ -24,14 +28,16 @@ export default function ServiceCard({ tratamiento, image }) {
       state={{ salon: miniSalonInfo }}
       className={cardStyles}
     >
-      {/* Contenedor de Imagen */}
-      <div
-        className={imageStyles}
-        style={{
-          backgroundImage: `url("${image || "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800"}")`,
-        }}
-      >
-        <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
+      {/* Contenedor de Imagen Blindado */}
+      {/* FIX: Este div envuelve a la imagen, asegura que las esquinas sean siempre redondas y recorta el zoom */}
+      <div className="rounded-[1.25rem] overflow-hidden mb-4 relative">
+        <div
+          className={imageStyles}
+          style={{
+            backgroundImage: `url("${image || "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800"}")`,
+          }}
+        />
+        {/* ELIMINADA la capa bg-black/5 para que las fotos luzcan a todo color desde el principio */}
       </div>
 
       <div className="flex w-full grow flex-col px-2 pb-2">

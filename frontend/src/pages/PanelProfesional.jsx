@@ -86,77 +86,88 @@ export default function PanelProfesional() {
   }, []);
 
   return (
-    <div className="bg-gray-50 min-h-screen font-sans">
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mx-auto max-w-7xl">
-          {/* CABECERA LIMPIA (SIN EL MENÚ DE TEXTO) */}
-          <div className="mb-8 border-b border-gray-200 pb-4">
-            <h1 className="text-3xl font-black text-[#181411]">
-              {loading ? "Cargando tu espacio..." : `Hola, ${salonName}`}
+    <div className="bg-aura-lavender min-h-screen font-sans relative overflow-hidden">
+      {/* Decoración Fondo */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-200/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none"></div>
+
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-16 relative z-10">
+        <div className="mx-auto max-w-6xl">
+          {/* CABECERA AURA */}
+          <div className="mb-12 border-b border-purple-100 pb-8">
+            <h1 className="text-5xl font-serif text-aura-plum tracking-tight">
+              {loading ? "Preparando tu espacio..." : `Hola, ${salonName}`}
             </h1>
-            <p className="text-gray-500 mt-1">
-              Aquí tienes el resumen de tu actividad.
+            <p className="text-gray-500 font-light italic mt-3 text-lg">
+              Tu resumen de actividad y bienestar.
             </p>
           </div>
 
           {/* DASHBOARD DE ESTADÍSTICAS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
-              <div className="w-12 h-12 bg-green-50 text-green-600 rounded-full flex items-center justify-center mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            {/* Tarjeta: Caja Fuerte */}
+            <div className="bg-white/60 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-sm border border-white flex flex-col justify-between hover:shadow-pearl transition-shadow">
+              <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-6 shadow-inner border border-green-50">
                 <span className="material-symbols-outlined text-2xl">
                   payments
                 </span>
               </div>
               <div>
-                <p className="text-gray-500 text-sm font-bold mb-1">
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">
                   Caja Fuerte
                 </p>
-                <h3 className="text-3xl font-black text-[#181411]">
+                <h3 className="text-4xl font-serif text-aura-plum">
                   {stats.ingresosTotales.toFixed(2)} €
                 </h3>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
-              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4">
+
+            {/* Tarjeta: Citas Realizadas */}
+            <div className="bg-white/60 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-sm border border-white flex flex-col justify-between hover:shadow-pearl transition-shadow">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-inner border border-blue-50">
                 <span className="material-symbols-outlined text-2xl">
                   task_alt
                 </span>
               </div>
               <div>
-                <p className="text-gray-500 text-sm font-bold mb-1">
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">
                   Citas Realizadas
                 </p>
-                <h3 className="text-3xl font-black text-[#181411]">
+                <h3 className="text-4xl font-serif text-aura-plum">
                   {stats.citasTerminadas}
                 </h3>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
-              <div className="w-12 h-12 bg-orange-50 text-[#f48c25] rounded-full flex items-center justify-center mb-4">
+
+            {/* Tarjeta: Próximas Citas */}
+            <div className="bg-white/60 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-sm border border-white flex flex-col justify-between hover:shadow-pearl transition-shadow">
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-purple-50 text-aura-plum rounded-2xl flex items-center justify-center mb-6 shadow-inner border border-purple-50">
                 <span className="material-symbols-outlined text-2xl">
                   event_upcoming
                 </span>
               </div>
               <div>
-                <p className="text-gray-500 text-sm font-bold mb-1">
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">
                   Próximas Citas
                 </p>
-                <h3 className="text-3xl font-black text-[#181411]">
+                <h3 className="text-4xl font-serif text-aura-plum">
                   {stats.citasProximas}
                 </h3>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
-              <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+
+            {/* Tarjeta: Cancelaciones */}
+            <div className="bg-white/60 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-sm border border-white flex flex-col justify-between hover:shadow-pearl transition-shadow">
+              <div className="w-14 h-14 bg-gradient-to-br from-red-100 to-red-50 text-red-400 rounded-2xl flex items-center justify-center mb-6 shadow-inner border border-red-50">
                 <span className="material-symbols-outlined text-2xl">
                   cancel
                 </span>
               </div>
               <div>
-                <p className="text-gray-500 text-sm font-bold mb-1">
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">
                   Cancelaciones
                 </p>
-                <h3 className="text-3xl font-black text-[#181411]">
+                <h3 className="text-4xl font-serif text-aura-plum">
                   {stats.citasCanceladas}
                 </h3>
               </div>
@@ -164,62 +175,60 @@ export default function PanelProfesional() {
           </div>
 
           {/* TARJETAS GRANDES DE NAVEGACIÓN */}
-          <h2 className="text-xl font-bold text-[#181411] mb-6 border-b border-gray-200 pb-2">
+          <h2 className="text-2xl font-serif text-aura-plum mb-8 border-b border-purple-100 pb-4">
             Gestión del Salón
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* TARJETA 1: CALENDARIO */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* NAVEGACIÓN: CALENDARIO */}
             <Link
               to="/panel/calendario"
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-[#f48c25] transition-all cursor-pointer group block"
+              className="bg-white/80 backdrop-blur-md rounded-[3rem] shadow-sm border border-white p-10 hover:shadow-pearl hover:bg-white transition-all cursor-pointer group block text-center"
             >
-              <div className="w-14 h-14 bg-orange-50 text-[#f48c25] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-3xl">
+              <div className="size-20 mx-auto bg-gradient-to-tr from-purple-100 to-white text-aura-plum rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-inner border border-purple-50">
+                <span className="material-symbols-outlined text-4xl">
                   calendar_month
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-[#181411] mb-2">
-                Agenda y Calendario
-              </h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="text-xl font-bold text-aura-plum mb-3">Agenda</h3>
+              <p className="text-sm text-gray-500 font-light italic leading-relaxed">
                 Gestiona tus reservas, cambia estados y añade nuevas citas
                 manuales.
               </p>
             </Link>
 
-            {/* TARJETA 2: SERVICIOS */}
+            {/* NAVEGACIÓN: SERVICIOS */}
             <Link
               to="/panel/servicios"
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-[#f48c25] transition-all cursor-pointer group block"
+              className="bg-white/80 backdrop-blur-md rounded-[3rem] shadow-sm border border-white p-10 hover:shadow-pearl hover:bg-white transition-all cursor-pointer group block text-center"
             >
-              <div className="w-14 h-14 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-3xl">
+              <div className="size-20 mx-auto bg-gradient-to-tr from-purple-100 to-white text-aura-plum rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-inner border border-purple-50">
+                <span className="material-symbols-outlined text-4xl">
                   format_list_bulleted
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-[#181411] mb-2">
-                Servicios y Horario
+              <h3 className="text-xl font-bold text-aura-plum mb-3">
+                Servicios y Horarios
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 font-light italic leading-relaxed">
                 Añade tratamientos, edita precios o modifica tus horas de
                 apertura.
               </p>
             </Link>
 
-            {/* TARJETA 3: PERFIL */}
+            {/* NAVEGACIÓN: PERFIL */}
             <Link
               to="/panel/perfil"
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-[#f48c25] transition-all cursor-pointer group block"
+              className="bg-white/80 backdrop-blur-md rounded-[3rem] shadow-sm border border-white p-10 hover:shadow-pearl hover:bg-white transition-all cursor-pointer group block text-center"
             >
-              <div className="w-14 h-14 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-3xl">
+              <div className="size-20 mx-auto bg-gradient-to-tr from-purple-100 to-white text-aura-plum rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-inner border border-purple-50">
+                <span className="material-symbols-outlined text-4xl">
                   storefront
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-[#181411] mb-2">
-                Perfil del Negocio
+              <h3 className="text-xl font-bold text-aura-plum mb-3">
+                Mi Negocio
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 font-light italic leading-relaxed">
                 Edita tu descripción, sube fotos y mantén tu escaparate
                 actualizado.
               </p>

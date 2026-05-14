@@ -289,6 +289,8 @@ export default function BlogDetail() {
       </section>
 
       {/* MODALES */}
+
+      {/* Modal Borrar Post */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-aura-plum/20 backdrop-blur-md p-6">
           <div className="bg-white rounded-[3rem] p-12 max-w-sm w-full shadow-2xl text-center border border-purple-50">
@@ -308,6 +310,35 @@ export default function BlogDetail() {
               </button>
               <button
                 onClick={() => setShowDeleteModal(false)}
+                className="w-full py-4 text-gray-400 font-bold"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Borrar Comentario */}
+      {showDeleteCommentModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-aura-plum/20 backdrop-blur-md p-6">
+          <div className="bg-white rounded-[3rem] p-12 max-w-sm w-full shadow-2xl text-center border border-purple-50">
+            <span className="material-symbols-outlined text-6xl text-red-200 mb-6 font-light">
+              delete_sweep
+            </span>
+            <h3 className="text-2xl font-serif text-aura-plum mb-4 italic">
+              ¿Eliminar esta reflexión?
+            </h3>
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={confirmDeleteComment}
+                disabled={isDeletingComment}
+                className="w-full py-4 bg-red-400 text-white rounded-2xl font-bold hover:bg-red-500 transition-all"
+              >
+                {isDeletingComment ? "Borrando..." : "Confirmar Borrado"}
+              </button>
+              <button
+                onClick={() => setShowDeleteCommentModal(false)}
                 className="w-full py-4 text-gray-400 font-bold"
               >
                 Cancelar

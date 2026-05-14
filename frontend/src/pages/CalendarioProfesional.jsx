@@ -26,7 +26,7 @@ export default function CalendarioProfesional() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
-  // ESTADO DEL FORMULARIO DE NUEVA CITA (Actualizado con guest_phone)
+  // ESTADO DEL FORMULARIO DE NUEVA CITA
   const [formData, setFormData] = useState({
     booking_date: "",
     start_time: "",
@@ -56,7 +56,13 @@ export default function CalendarioProfesional() {
     setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)));
   const goToday = () => setCurrentDate(new Date());
 
-  const formatDateForDjango = (date) => date.toISOString().split("T")[0];
+  const formatDateForDjango = (date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   // --- OBTENER DATOS ---
   const fetchData = async () => {
@@ -90,9 +96,7 @@ export default function CalendarioProfesional() {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      if (resClients.ok) {
-        setClientsList(await resClients.json());
-      }
+      if (resClients.ok) setClientsList(await resClients.json());
 
       const resProfile = await fetch(
         "http://127.0.0.1:8000/api/users/profiles/me/",
@@ -113,14 +117,12 @@ export default function CalendarioProfesional() {
     fetchData();
   }, [currentDate]);
 
-  // --- FILTRAR CLIENTES ---
   const filteredClients = clientsList.filter(
     (c) =>
       c.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.email.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  // --- CREAR NUEVA CITA ---
   const handleCreateBooking = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -132,7 +134,7 @@ export default function CalendarioProfesional() {
       start_time: formData.start_time,
       service_ids: [parseInt(formData.service_id)],
       status: "confirmed",
-      guest_phone: formData.guest_phone, // <-- Enviamos el teléfono (sea nuevo o recuperado)
+      guest_phone: formData.guest_phone,
     };
 
     if (formData.client_id) {
@@ -177,7 +179,6 @@ export default function CalendarioProfesional() {
     }
   };
 
-  // --- ACTUALIZAR CITA EXISTENTE ---
   const handleUpdateBooking = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("access_token");
@@ -210,7 +211,6 @@ export default function CalendarioProfesional() {
     }
   };
 
-  // --- MATEMÁTICAS DEL GRID ---
   const calculateTopPosition = (timeString) => {
     if (!timeString) return 0;
     const [hours, minutes] = timeString.split(":").map(Number);
@@ -223,20 +223,18 @@ export default function CalendarioProfesional() {
     return booking.services.map((s) => s.name || s).join(", ");
   };
 
-  const DEFAULT_HEIGHT = 80;
-
   const getStatusColor = (status) => {
     switch (status) {
       case "completed":
-        return "bg-blue-100 border-blue-500 text-blue-800";
+        return "bg-purple-100 border-aura-plum text-aura-plum";
       case "confirmed":
         return "bg-green-100 border-green-500 text-green-800";
       case "pending":
-        return "bg-orange-100 border-orange-500 text-orange-800";
+        return "bg-fuchsia-50 border-fuchsia-300 text-fuchsia-800";
       case "cancelled":
-        return "bg-red-50 border-red-300 text-red-500 opacity-60";
+        return "bg-red-50 border-red-200 text-red-400 opacity-60";
       default:
-        return "bg-gray-100 border-gray-500 text-gray-800";
+        return "bg-gray-100 border-gray-300 text-gray-800";
     }
   };
 
@@ -256,74 +254,82 @@ export default function CalendarioProfesional() {
     "Diciembre",
   ];
 
+  const pearlBtn =
+    "flex items-center gap-2 bg-gradient-to-r from-purple-100 via-white to-fuchsia-100 border border-white/60 shadow-pearl text-aura-plum px-6 py-3 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-sm";
+  const inputStyles =
+    "w-full bg-white/80 border border-purple-100 rounded-2xl px-6 py-4 text-aura-plum font-medium focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-purple-200";
+  const labelStyles =
+    "block text-[11px] font-black text-aura-plum/60 mb-2 uppercase tracking-[0.2em] ml-2";
+
   return (
-    <div className="bg-gray-100 font-display flex flex-col h-screen overflow-hidden relative">
+    <div className="bg-aura-lavender font-sans flex flex-col h-screen overflow-hidden relative">
       {/* CABECERA GENERAL */}
-      <div className="w-full bg-white border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 z-40 shadow-sm">
+      <div className="w-full bg-white/40 backdrop-blur-md border-b border-purple-100 px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-4 z-40">
         <div className="flex items-center gap-4">
           <Link
             to="/panel"
-            className="p-2 mr-2 rounded-full hover:bg-gray-100 border border-gray-300 text-gray-500 hover:text-[#f48c25] transition-colors flex items-center justify-center"
+            className="p-3 rounded-full hover:bg-white/60 border border-purple-100 text-aura-plum transition-all flex items-center justify-center shadow-sm"
           >
             <span className="material-symbols-outlined">home</span>
           </Link>
-          <button
-            onClick={prevWeek}
-            className="p-2 rounded-full hover:bg-gray-100 border border-gray-300 transition-colors flex items-center justify-center"
-          >
-            <span className="material-symbols-outlined text-gray-600">
-              chevron_left
-            </span>
-          </button>
-          <h2 className="text-xl font-bold text-[#181411] min-w-[150px] text-center">
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </h2>
-          <button
-            onClick={nextWeek}
-            className="p-2 rounded-full hover:bg-gray-100 border border-gray-300 transition-colors flex items-center justify-center"
-          >
-            <span className="material-symbols-outlined text-gray-600">
-              chevron_right
-            </span>
-          </button>
+          <div className="flex items-center bg-white/60 rounded-2xl border border-purple-100 p-1 shadow-sm">
+            <button
+              onClick={prevWeek}
+              className="p-2 rounded-xl hover:bg-white transition-colors flex items-center justify-center"
+            >
+              <span className="material-symbols-outlined text-aura-plum">
+                chevron_left
+              </span>
+            </button>
+            <h2 className="text-lg font-serif text-aura-plum px-6 min-w-[180px] text-center uppercase tracking-tight">
+              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            </h2>
+            <button
+              onClick={nextWeek}
+              className="p-2 rounded-xl hover:bg-white transition-colors flex items-center justify-center"
+            >
+              <span className="material-symbols-outlined text-aura-plum">
+                chevron_right
+              </span>
+            </button>
+          </div>
           <button
             onClick={goToday}
-            className="ml-2 px-4 py-1.5 text-sm font-bold border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+            className="px-5 py-2 text-xs font-black uppercase tracking-widest bg-white border border-purple-100 rounded-xl hover:bg-purple-50 text-aura-plum transition-all shadow-sm"
           >
             Hoy
           </button>
         </div>
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setShowNewModal(true)}
-            className="flex items-center gap-2 bg-[#f48c25] hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors"
-          >
+          <button onClick={() => setShowNewModal(true)} className={pearlBtn}>
             <span className="material-symbols-outlined text-[20px]">add</span>
             <span>Nueva Cita</span>
           </button>
         </div>
       </div>
 
-      {/* ÁREA PRINCIPAL CON MÁRGENES (NUEVO) */}
-      <main className="flex-grow p-4 md:p-8 overflow-hidden flex justify-center bg-gray-50">
-        <div className="w-full max-w-[1400px] h-full bg-white rounded-3xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+      {/* ÁREA PRINCIPAL CON MÁRGENES */}
+      <main className="flex-grow p-4 md:p-8 overflow-hidden flex justify-center bg-aura-lavender relative">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+
+        <div className="w-full max-w-[1400px] h-full bg-white/40 backdrop-blur-xl rounded-[3rem] shadow-pearl border border-white flex flex-col overflow-hidden relative z-10">
           {/* CABECERA DÍAS */}
-          <div className="flex border-b border-gray-200 bg-white z-30 pl-16">
+          <div className="flex border-b border-purple-50 bg-white/40 z-30 pl-20">
             {weekDays.map((date, index) => {
               const isToday =
                 formatDateForDjango(date) === formatDateForDjango(new Date());
               return (
                 <div
                   key={index}
-                  className={`flex-1 py-4 text-center border-r border-gray-100 ${isToday ? "bg-orange-50/30" : ""}`}
+                  className={`flex-1 py-5 text-center border-r border-purple-50 ${isToday ? "bg-purple-100/30" : ""}`}
                 >
                   <span
-                    className={`text-[10px] uppercase block tracking-widest ${isToday ? "text-[#f48c25] font-black" : "text-gray-400 font-bold"}`}
+                    className={`text-[10px] uppercase block tracking-[0.2em] mb-1 ${isToday ? "text-aura-plum font-black" : "text-purple-300 font-bold"}`}
                   >
                     {dayNames[index]}
                   </span>
                   <span
-                    className={`text-xl ${isToday ? "font-black text-[#f48c25]" : "font-bold text-[#181411]"}`}
+                    className={`text-2xl font-serif ${isToday ? "text-aura-plum" : "text-gray-400"}`}
                   >
                     {date.getDate()}
                   </span>
@@ -333,17 +339,17 @@ export default function CalendarioProfesional() {
           </div>
 
           {/* GRID SCROLLABLE */}
-          <div className="flex-grow overflow-y-auto flex relative no-scrollbar bg-white">
-            {/* HORAS */}
-            <div className="w-16 flex-shrink-0 border-r border-gray-100 relative z-20 pt-8 pb-8">
+          <div className="flex-grow overflow-y-auto flex relative no-scrollbar bg-white/10">
+            {/* HORAS LATERALES */}
+            <div className="w-20 flex-shrink-0 border-r border-purple-100/50 relative z-30 pt-4 pb-8 bg-white/20">
               <div className="h-[960px] relative w-full">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div
                     key={i}
-                    className="absolute w-full right-2 text-right"
+                    className="absolute w-full right-4 text-right -translate-y-1/2"
                     style={{ top: `${i * 80}px` }}
                   >
-                    <span className="text-[11px] text-gray-300 font-bold relative -top-3">
+                    <span className="text-[11px] text-aura-plum/40 font-black relative -top-3">
                       {9 + i}:00
                     </span>
                   </div>
@@ -351,15 +357,16 @@ export default function CalendarioProfesional() {
               </div>
             </div>
 
-            {/* GRID DERECHO */}
-            <div className="flex-grow relative z-10 pt-8 pb-8 flex">
+            {/* CUERPO GRID (CON CEBRA) */}
+            <div className="flex-grow relative z-10 pt-4 pb-8 flex">
               <div className="h-[960px] w-full relative flex">
+                {/* FONDO CEBRA DINÁMICO */}
                 <div className="absolute inset-0 pointer-events-none z-0">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <div
                       key={i}
-                      className="absolute w-full border-t border-gray-100"
-                      style={{ top: `${i * 80}px` }}
+                      className={`absolute w-full border-t border-purple-100/30 ${i % 2 === 0 ? "bg-purple-50/40" : "bg-transparent"}`}
+                      style={{ top: `${i * 80}px`, height: "80px" }}
                     ></div>
                   ))}
                 </div>
@@ -370,13 +377,14 @@ export default function CalendarioProfesional() {
                     (b) => b.booking_date === dateStr,
                   );
 
+                  // SOLUCIÓN: Volvemos a la lógica de bloquear SOLO el Domingo (índice 6) por defecto.
                   if (index === 6) {
                     return (
                       <div
                         key={index}
-                        className="flex-1 bg-gray-50/50 relative flex items-center justify-center border-r border-gray-100"
+                        className="flex-1 bg-aura-plum/[0.03] relative flex items-center justify-center border-r border-purple-50/50 backdrop-grayscale-[0.2]"
                       >
-                        <span className="transform -rotate-90 text-gray-200 font-black tracking-widest text-2xl">
+                        <span className="transform -rotate-90 text-aura-plum/10 font-black tracking-[0.5em] text-3xl uppercase pointer-events-none">
                           CERRADO
                         </span>
                       </div>
@@ -386,7 +394,7 @@ export default function CalendarioProfesional() {
                   return (
                     <div
                       key={index}
-                      className="flex-1 border-r border-gray-100 relative group hover:bg-gray-50/30 transition-colors z-10"
+                      className="flex-1 border-r border-purple-100/20 relative group hover:bg-white/10 transition-colors z-10"
                     >
                       {dayBookings.map((booking) => {
                         const topPos = calculateTopPosition(booking.start_time);
@@ -403,30 +411,30 @@ export default function CalendarioProfesional() {
                               });
                               setShowEditModal(true);
                             }}
-                            className={`absolute left-1 right-1 border-l-4 rounded-xl p-2.5 cursor-pointer hover:shadow-lg transition-all z-20 hover:scale-[1.02] flex flex-col justify-start overflow-hidden ${colorClasses}`}
+                            className={`absolute left-1 right-1 border-l-4 rounded-2xl p-3 cursor-pointer shadow-sm hover:shadow-xl transition-all z-20 hover:scale-[1.02] flex flex-col justify-start overflow-hidden ${colorClasses}`}
                             style={{
                               top: `${topPos}px`,
-                              height: `${DEFAULT_HEIGHT}px`,
+                              height: `76px`,
                             }}
                           >
                             <div className="flex justify-between items-center mb-1">
-                              <p className="text-[10px] font-black uppercase opacity-70">
+                              <p className="text-[9px] font-black uppercase opacity-70 tracking-tighter">
                                 {booking.start_time?.substring(0, 5)}
                               </p>
-                              <span className="text-[10px]">
+                              <span className="text-[12px] opacity-40">
                                 {booking.status === "cancelled"
-                                  ? "❌"
+                                  ? "✕"
                                   : booking.status === "completed"
                                     ? "✅"
-                                    : "⏳"}
+                                    : "✦"}
                               </span>
                             </div>
-                            <p className="text-[12px] font-black truncate leading-tight mb-0.5">
+                            <p className="text-[11px] font-bold truncate leading-tight mb-0.5">
                               {booking.guest_name ||
                                 booking.client_name ||
                                 "Cliente Presencial"}
                             </p>
-                            <p className="text-[10px] font-bold truncate opacity-60 italic">
+                            <p className="text-[9px] truncate opacity-60 italic font-medium">
                               {getServicesText(booking)}
                             </p>
                           </div>
@@ -441,33 +449,31 @@ export default function CalendarioProfesional() {
         </div>
       </main>
 
-      {/* --- MODAL 1: NUEVA CITA (EL CAMALEÓN) --- */}
+      {/* --- MODAL 1: NUEVA CITA --- */}
       {showNewModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-md">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-black text-[#181411]">Nueva Cita</h3>
+        <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] shadow-2xl p-10 w-full max-w-md animate-in zoom-in-95 duration-300 border border-white">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-3xl font-serif text-aura-plum">Nueva Cita</h3>
               <button
                 onClick={() => setShowNewModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-purple-300 hover:text-red-400 transition-colors"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <form onSubmit={handleCreateBooking} className="space-y-5">
-              {/* BUSCADOR INTELIGENTE */}
-              <div className="flex flex-col gap-2 relative">
-                <label className="text-sm font-bold text-gray-600">
-                  ¿Para quién es la cita?
-                </label>
+
+            <form onSubmit={handleCreateBooking} className="space-y-6">
+              <div className="flex flex-col relative">
+                <label className={labelStyles}>¿Para quién es la cita?</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-3.5 text-gray-400 material-symbols-outlined">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-200 material-symbols-outlined">
                     search
                   </span>
                   <input
                     type="text"
                     required
-                    placeholder="Busca un cliente o escribe un nombre..."
+                    placeholder="Busca cliente o nombre..."
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
@@ -480,11 +486,12 @@ export default function CalendarioProfesional() {
                     }}
                     onFocus={() => setShowDropdown(true)}
                     onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                    className="w-full pl-10 border border-gray-200 p-3.5 rounded-2xl focus:border-[#f48c25] outline-none"
+                    className={`${inputStyles} pl-12`}
                   />
                 </div>
+
                 {showDropdown && searchQuery && filteredClients.length > 0 && (
-                  <div className="absolute top-[85px] left-0 w-full bg-white border border-gray-200 rounded-2xl shadow-2xl max-h-48 overflow-y-auto z-50 p-2">
+                  <div className="absolute top-[85px] left-0 w-full bg-white border border-purple-50 rounded-2xl shadow-2xl max-h-48 overflow-y-auto z-50 p-2">
                     {filteredClients.map((c) => (
                       <div
                         key={c.id}
@@ -497,13 +504,13 @@ export default function CalendarioProfesional() {
                           });
                           setShowDropdown(false);
                         }}
-                        className="p-3 hover:bg-orange-50 rounded-xl cursor-pointer flex items-center justify-between"
+                        className="p-3 hover:bg-purple-50 rounded-xl cursor-pointer flex items-center justify-between"
                       >
-                        <span className="font-bold text-[#181411]">
+                        <span className="font-bold text-aura-plum">
                           {c.nombre}
                         </span>
-                        <span className="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-500 uppercase font-black">
-                          Cliente
+                        <span className="text-[9px] bg-purple-100 px-2 py-1 rounded text-aura-plum uppercase font-black tracking-widest">
+                          Ficha
                         </span>
                       </div>
                     ))}
@@ -511,13 +518,10 @@ export default function CalendarioProfesional() {
                 )}
               </div>
 
-              {/* SECCIÓN DINÁMICA DE TELÉFONO */}
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-gray-600">
-                  Teléfono de contacto
-                </label>
+                <label className={labelStyles}>Teléfono de contacto</label>
                 {formData.client_id ? (
-                  <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 text-gray-600">
+                  <div className="flex items-center gap-3 bg-purple-50/50 p-4 rounded-2xl border border-purple-50 text-aura-plum/70">
                     <span className="material-symbols-outlined text-[20px]">
                       call
                     </span>
@@ -527,12 +531,12 @@ export default function CalendarioProfesional() {
                   </div>
                 ) : (
                   <div className="relative">
-                    <span className="absolute left-3 top-3.5 text-gray-400 material-symbols-outlined">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-200 material-symbols-outlined">
                       call
                     </span>
                     <input
                       type="tel"
-                      placeholder="Número para este nuevo cliente..."
+                      placeholder="Número para el cliente..."
                       value={formData.guest_phone}
                       onChange={(e) =>
                         setFormData({
@@ -540,23 +544,21 @@ export default function CalendarioProfesional() {
                           guest_phone: e.target.value,
                         })
                       }
-                      className="w-full pl-10 border border-gray-200 p-3.5 rounded-2xl focus:border-[#f48c25] outline-none"
+                      className={`${inputStyles} pl-12`}
                     />
                   </div>
                 )}
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-gray-600">
-                  Servicio
-                </label>
+                <label className={labelStyles}>Servicio</label>
                 <select
                   required
                   value={formData.service_id}
                   onChange={(e) =>
                     setFormData({ ...formData, service_id: e.target.value })
                   }
-                  className="border border-gray-200 p-3.5 rounded-2xl focus:border-[#f48c25] outline-none bg-white font-bold text-gray-700"
+                  className={inputStyles}
                 >
                   <option value="">Selecciona un servicio...</option>
                   {services.map((s) => (
@@ -569,9 +571,7 @@ export default function CalendarioProfesional() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold text-gray-600">
-                    Fecha
-                  </label>
+                  <label className={labelStyles}>Fecha</label>
                   <input
                     type="date"
                     required
@@ -579,13 +579,11 @@ export default function CalendarioProfesional() {
                     onChange={(e) =>
                       setFormData({ ...formData, booking_date: e.target.value })
                     }
-                    className="border border-gray-200 p-3.5 rounded-2xl outline-none"
+                    className={inputStyles}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold text-gray-600">
-                    Hora
-                  </label>
+                  <label className={labelStyles}>Hora</label>
                   <input
                     type="time"
                     required
@@ -593,16 +591,17 @@ export default function CalendarioProfesional() {
                     onChange={(e) =>
                       setFormData({ ...formData, start_time: e.target.value })
                     }
-                    className="border border-gray-200 p-3.5 rounded-2xl outline-none"
+                    className={inputStyles}
                   />
                 </div>
               </div>
+
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full bg-[#f48c25] text-white py-4 rounded-2xl font-black hover:bg-orange-600 shadow-lg shadow-orange-200 transition-all mt-4 disabled:bg-gray-300"
+                className="w-full bg-aura-plum text-white py-5 rounded-[2rem] font-bold shadow-lg hover:scale-[1.02] transition-all disabled:opacity-30 mt-4 uppercase tracking-widest text-sm"
               >
-                {saving ? "CREANDO..." : "CREAR CITA"}
+                {saving ? "CREANDO..." : "AGENDAR CITA"}
               </button>
             </form>
           </div>
@@ -611,60 +610,53 @@ export default function CalendarioProfesional() {
 
       {/* --- MODAL 2: ÉXITO --- */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-xl p-10 w-full max-w-sm flex flex-col items-center text-center">
-            <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-6">
-              <span className="material-symbols-outlined text-5xl">
-                check_circle
-              </span>
-            </div>
-            <h3 className="text-2xl font-black text-[#181411] mb-2">
-              ¡Cita Creada!
+        <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm flex flex-col items-center text-center shadow-2xl border border-white animate-in zoom-in-95 duration-300">
+            <span className="material-symbols-outlined text-green-400 text-7xl mb-6">
+              check_circle
+            </span>
+            <h3 className="text-2xl font-serif text-aura-plum mb-8">
+              ¡Cita Agendada!
             </h3>
-            <p className="text-gray-500 mb-8 font-medium">
-              Todo listo. La cita ya está en tu calendario.
-            </p>
             <button
               onClick={() => setShowSuccessModal(false)}
-              className="w-full bg-[#181411] text-white py-4 rounded-2xl font-black hover:bg-gray-800 transition-colors"
+              className="w-full bg-aura-plum text-white py-4 rounded-2xl font-bold shadow-md hover:scale-[1.02] transition-all"
             >
-              Aceptar
+              Entendido
             </button>
           </div>
         </div>
       )}
 
-      {/* --- MODAL 3: GESTIONAR (USA DISPLAY_PHONE) --- */}
+      {/* --- MODAL 3: GESTIONAR --- */}
       {showEditModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[40px] shadow-2xl p-10 w-full max-w-md">
+        <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] shadow-2xl p-10 w-full max-w-md border border-white animate-in zoom-in-95 duration-300">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-black text-[#181411]">
-                Gestionar Cita
-              </h3>
+              <h3 className="text-3xl font-serif text-aura-plum">Gestionar</h3>
               <button
                 onClick={() => setShowEditModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-purple-300 hover:text-red-400 transition-colors"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <form onSubmit={handleUpdateBooking}>
-              <div className="bg-gray-50 rounded-3xl p-6 mb-8 border border-gray-100">
+
+            <form onSubmit={handleUpdateBooking} className="space-y-8">
+              <div className="bg-purple-50/50 rounded-[2rem] p-6 border border-purple-100 shadow-inner">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">
+                    <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-1">
                       Cliente
                     </p>
-                    <p className="text-xl font-black text-[#181411] capitalize leading-none mb-2">
+                    <p className="text-xl font-bold text-aura-plum leading-none mb-2">
                       {selectedBooking.guest_name ||
                         selectedBooking.client_name ||
-                        "Cliente Presencial"}
+                        "Presencial"}
                     </p>
-                    {/* USO DEL CAMPO MÁGICO DISPLAY_PHONE */}
                     {selectedBooking.display_phone &&
                       selectedBooking.display_phone !== "Sin teléfono" && (
-                        <p className="text-sm font-bold text-[#f48c25] flex items-center gap-2">
+                        <p className="text-sm font-bold text-aura-plum/60 flex items-center gap-2">
                           <span className="material-symbols-outlined text-[18px]">
                             call
                           </span>
@@ -672,28 +664,30 @@ export default function CalendarioProfesional() {
                         </p>
                       )}
                   </div>
-                  <div className="bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100 text-center">
-                    <p className="text-[9px] font-black text-gray-400 uppercase mb-0.5">
+                  <div className="bg-white px-4 py-2 rounded-2xl shadow-sm border border-purple-50 text-center">
+                    <p className="text-[9px] font-black text-purple-300 uppercase tracking-widest mb-0.5">
                       Precio
                     </p>
-                    <p className="text-lg font-black text-[#181411]">
+                    <p className="text-lg font-serif text-aura-plum">
                       {selectedBooking.total_price
-                        ? `${parseFloat(selectedBooking.total_price).toFixed(2).replace(".", ",")}€`
+                        ? `${parseFloat(selectedBooking.total_price).toFixed(2)}€`
                         : "--"}
                     </p>
                   </div>
                 </div>
-                <div className="mb-6 pb-6 border-b border-gray-200/50">
-                  <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">
+
+                <div className="mb-6 pb-6 border-b border-purple-100/50">
+                  <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-2">
                     Tratamiento
                   </p>
-                  <p className="text-sm font-bold text-[#181411] bg-white p-3 rounded-xl border border-gray-100">
+                  <p className="text-sm font-bold text-aura-plum bg-white p-3 rounded-xl border border-purple-50">
                     {getServicesText(selectedBooking)}
                   </p>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">
+                    <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-1">
                       Fecha
                     </p>
                     <input
@@ -706,11 +700,11 @@ export default function CalendarioProfesional() {
                           booking_date: e.target.value,
                         })
                       }
-                      className="w-full border-gray-200 border p-3 rounded-xl font-bold text-sm"
+                      className={`${inputStyles} py-3 text-sm`}
                     />
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">
+                    <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-1">
                       Hora
                     </p>
                     <input
@@ -723,21 +717,20 @@ export default function CalendarioProfesional() {
                           start_time: e.target.value,
                         })
                       }
-                      className="w-full border-gray-200 border p-3 rounded-xl font-bold text-sm"
+                      className={`${inputStyles} py-3 text-sm`}
                     />
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2 mb-8">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                  Estado
-                </label>
+
+              <div>
+                <label className={labelStyles}>Actualizar Estado</label>
                 <select
                   value={editFormData.status}
                   onChange={(e) =>
                     setEditFormData({ ...editFormData, status: e.target.value })
                   }
-                  className="border-2 border-gray-100 p-4 rounded-2xl outline-none font-black text-gray-700 bg-gray-50"
+                  className={inputStyles}
                 >
                   <option value="pending">⏳ Pendiente</option>
                   <option value="confirmed">👍 Confirmada</option>
@@ -745,11 +738,12 @@ export default function CalendarioProfesional() {
                   <option value="cancelled">❌ Cancelada</option>
                 </select>
               </div>
+
               <button
                 type="submit"
-                className="w-full bg-[#181411] text-white py-5 rounded-2xl font-black hover:bg-gray-800 shadow-xl transition-all"
+                className="w-full bg-aura-plum text-white py-5 rounded-[2rem] font-bold shadow-lg hover:scale-[1.02] transition-all uppercase tracking-widest text-sm"
               >
-                GUARDAR CAMBIOS
+                Actualizar Cita
               </button>
             </form>
           </div>

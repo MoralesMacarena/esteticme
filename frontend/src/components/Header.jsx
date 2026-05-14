@@ -15,7 +15,17 @@ export default function Header() {
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     const role = localStorage.getItem("user_role");
-    const name = localStorage.getItem("user_name") || "Mi Cuenta";
+    let name = localStorage.getItem("user_name");
+
+    // 🔥 LA SOLUCIÓN: Limpiar la palabra literal "undefined" o "null" de JavaScript
+    if (
+      !name ||
+      name === "undefined" ||
+      name === "null" ||
+      name.trim() === ""
+    ) {
+      name = "Mi Cuenta";
+    }
 
     setIsAuthenticated(!!token);
     // Si no hay rol (por algún error), asumimos cliente por defecto para no romper la app

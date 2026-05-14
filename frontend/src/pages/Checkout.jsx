@@ -2,9 +2,13 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
 // --- 1. FUNCIÓN PARA GENERAR HORARIOS DINÁMICOS ---
-const generateDynamicTimeSlots = (startTimeStr, endTimeStr, totalDuration) => {
+const generateDynamicTimeSlots = (
+  startTimeStr,
+  endTimeStr,
+  totalDuration,
+  occupiedBookings = [],
+) => {
   const slots = [];
-
   const startHour = parseInt(startTimeStr.split(":")[0]);
   const startMin = parseInt(startTimeStr.split(":")[1]);
   const endHour = parseInt(endTimeStr.split(":")[0]);
@@ -15,156 +19,85 @@ const generateDynamicTimeSlots = (startTimeStr, endTimeStr, totalDuration) => {
 
   let end = new Date();
   end.setHours(endHour, endMin, 0, 0);
-
-  // Restamos la duración total para no dar citas que terminen fuera de hora
   end.setMinutes(end.getMinutes() - (totalDuration || 0));
+
+  const toMins = (timeStr) => {
+    const [h, m] = timeStr.split(":").map(Number);
+    return h * 60 + m;
+  };
 
   while (current <= end) {
     const h = current.getHours().toString().padStart(2, "0");
     const m = current.getMinutes().toString().padStart(2, "0");
-    slots.push(`${h}:${m}`);
+    const slotTimeStr = `${h}:${m}`;
 
-    current.setMinutes(current.getMinutes() + 30); // Intervalos de 30 min
+    const slotStartMins = toMins(slotTimeStr);
+    const slotEndMins = slotStartMins + (totalDuration || 30);
+
+    const isOccupied = occupiedBookings.some((booking) => {
+      const bStartMins = toMins(booking.start_time);
+      const bEndMins = bStartMins + (booking.total_duration || 30);
+      return slotStartMins < bEndMins && slotEndMins > bStartMins;
+    });
+
+    if (!isOccupied) {
+      slots.push(slotTimeStr);
+    }
+
+    current.setMinutes(current.getMinutes() + 30);
   }
   return slots;
 };
 
-// --- 2. COMPONENTE PRINCIPAL ---
 export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Recuperamos los datos de la mochila
   const { salon, cart, totalPrice, totalDuration } = location.state || {};
 
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [loading, setLoading] = useState(false);
   const [backendError, setBackendError] = useState("");
-
   const [availabilities, setAvailabilities] = useState([]);
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
 
-  // Fetch de los horarios del salón al cargar la página
-  // Fetch de los horarios del salón al cargar la página
+  const BACKEND_URL = "http://127.0.0.1:8000";
+
   useEffect(() => {
     if (salon) {
-      // 1. Cogemos el token por si Django se pone estricto
       const token = localStorage.getItem("access_token");
-
-      fetch(
-        `http://127.0.0.1:8000/api/bookings/profesionales/${salon.id}/horarios/`,
-        {
-          // Le pasamos el token en las cabeceras (si lo tenemos)
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        },
-      )
-        .then((res) => {
-          if (!res.ok) throw new Error("Error del servidor al pedir horarios");
-          return res.json();
-        })
+      fetch(`${BACKEND_URL}/api/bookings/profesionales/${salon.id}/horarios/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+        .then((res) => res.json())
         .then((data) => {
-          // 2. PROTECCIÓN: Comprobamos si es una lista (Array) de verdad
-          if (Array.isArray(data)) {
-            setAvailabilities(data);
-          } else {
-            console.error("Django no devolvió una lista de horarios:", data);
-            setAvailabilities([]); // Lo dejamos vacío para que no explote
-          }
+          if (Array.isArray(data)) setAvailabilities(data);
+          else setAvailabilities([]);
         })
-        .catch((err) => {
-          console.error("Error cargando horarios:", err);
-          setAvailabilities([]); // En caso de error, lista vacía
-        });
+        .catch(() => setAvailabilities([]));
     }
   }, [salon]);
 
-  // Si alguien entra sin reserva, lo echamos
   if (!salon || !cart) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">
-          No hay ninguna reserva en curso
-        </h2>
-        <Link
-          to="/"
-          className="bg-[#f48c25] text-white px-6 py-2 rounded-lg font-bold"
-        >
-          Volver al inicio
-        </Link>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-aura-lavender p-4">
+        <div className="bg-white/60 backdrop-blur-xl p-12 rounded-[3rem] border border-white text-center shadow-pearl">
+          <h2 className="text-2xl font-serif text-aura-plum mb-6">
+            No hay reserva activa
+          </h2>
+          <Link
+            to="/"
+            className="inline-block bg-aura-plum text-white px-10 py-4 rounded-2xl font-bold"
+          >
+            Volver
+          </Link>
+        </div>
       </div>
     );
   }
 
-  const handleConfirmBooking = async () => {
-    setBackendError("");
-    if (!selectedDate || !selectedTime) {
-      setBackendError("Por favor, selecciona fecha y hora para tu cita.");
-      return;
-    }
-
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      alert("Tu sesión ha expirado, vuelve a iniciar sesión.");
-      navigate("/login");
-      return;
-    }
-
-    setLoading(true);
-    const payload = {
-      professional: salon.id,
-      booking_date: selectedDate,
-      start_time: selectedTime,
-      total_price: totalPrice,
-      service_ids: cart.map((item) => item.id),
-    };
-
-    try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/api/bookings/citas/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      const data = await response.json();
-
-      if (response.status === 401) {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        alert("Tu sesión ha expirado. Por favor, vuelve a entrar.");
-        navigate("/login");
-        return;
-      }
-
-      if (response.ok) {
-        navigate("/success", {
-          state: { salon, selectedDate, selectedTime, totalPrice },
-        });
-      } else {
-        console.error("Error del servidor:", data);
-        if (data.booking_date) setBackendError(data.booking_date[0]);
-        else if (data.start_time) setBackendError(data.start_time[0]);
-        else if (data.non_field_errors)
-          setBackendError(data.non_field_errors[0]);
-        else
-          setBackendError(
-            "Hubo un problema al crear la reserva. Revisa los datos.",
-          );
-      }
-    } catch (error) {
-      setBackendError("Error de conexión con el servidor.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDateChange = (e) => {
+  // --- 2. CAMBIO DE FECHA: AQUÍ ESTÁ LA MAGIA QUE LIBERA EL HUECO ---
+  const handleDateChange = async (e) => {
     const newDate = e.target.value;
     setBackendError("");
     setSelectedTime("");
@@ -177,198 +110,226 @@ export default function Checkout() {
 
     const [year, month, day] = newDate.split("-");
     const dateObj = new Date(year, month - 1, day);
-    const jsDay = dateObj.getDay(); // 0 es Domingo en JS
-    const pythonDay = jsDay === 0 ? 6 : jsDay - 1; // 6 es Domingo en tu Django
+    const pythonDay = dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1;
 
     const schedule = availabilities.find((a) => a.day_of_week === pythonDay);
 
     if (!schedule) {
-      setBackendError("El salón está cerrado en este día de la semana.");
+      setBackendError("El salón está cerrado este día.");
       setSelectedDate("");
       setAvailableTimeSlots([]);
     } else {
       setSelectedDate(newDate);
-      const slots = generateDynamicTimeSlots(
-        schedule.start_time,
-        schedule.end_time,
-        totalDuration || 0,
-      );
+      setLoading(true);
 
-      if (slots.length === 0) {
-        setBackendError(
-          "No hay hueco suficiente este día para los servicios seleccionados.",
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(
+          `${BACKEND_URL}/api/bookings/citas/?professional=${salon.id}&booking_date=${newDate}`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          },
         );
-        setAvailableTimeSlots([]);
-      } else {
-        setAvailableTimeSlots(slots);
+        const data = await res.json();
+        const bookingsList = Array.isArray(data) ? data : data.results || [];
+
+        // 🔥 EL FILTRO DESTRUTOR DE CANCELADAS 🔥
+        // Nos aseguramos de ignorar la cita sin importar si Django la devuelve en mayúsculas o minúsculas
+        const actualOccupied = bookingsList.filter((b) => {
+          const status = b.status ? b.status.toLowerCase() : "";
+          return status !== "cancelled" && status !== "cancelada";
+        });
+
+        const slots = generateDynamicTimeSlots(
+          schedule.start_time,
+          schedule.end_time,
+          totalDuration || 0,
+          actualOccupied, // Pasamos solo las citas VÁLIDAS
+        );
+
+        if (slots.length === 0) {
+          setBackendError("No hay huecos disponibles.");
+          setAvailableTimeSlots([]);
+        } else {
+          setAvailableTimeSlots(slots);
+        }
+      } catch (err) {
+        setBackendError("Error al comprobar disponibilidad.");
+      } finally {
+        setLoading(false);
       }
     }
   };
 
-  const handleTimeChange = (time) => {
-    setSelectedTime(time);
-    setBackendError("");
+  const handleConfirmBooking = async () => {
+    if (!selectedDate || !selectedTime)
+      return setBackendError("Selecciona fecha y hora.");
+    const token = localStorage.getItem("access_token");
+    setLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/bookings/citas/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          professional: salon.id,
+          booking_date: selectedDate,
+          start_time: selectedTime,
+          total_price: totalPrice,
+          service_ids: cart.map((item) => item.id),
+        }),
+      });
+      if (response.ok)
+        navigate("/success", {
+          state: { salon, selectedDate, selectedTime, totalPrice },
+        });
+      else setBackendError("Error al reservar.");
+    } catch (error) {
+      setBackendError("Error de conexión.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // --- 3. RENDERIZADO VISUAL ---
+  const pearlBtn =
+    "w-full bg-gradient-to-r from-purple-100 via-white to-fuchsia-100 border border-white/60 shadow-pearl text-aura-plum py-5 rounded-2xl font-bold text-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex justify-center items-center shadow-lg";
+  const sectionCard =
+    "bg-white/60 backdrop-blur-md p-8 rounded-[3rem] border border-white shadow-sm";
+
   return (
-    <main className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-center gap-4">
+    <main className="min-h-screen bg-aura-lavender py-16 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-white/40 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/4"></div>
+
+      <div className="max-w-6xl mx-auto px-4 relative z-10">
+        <div className="mb-12 flex items-center gap-6">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+            className="size-12 bg-white/80 rounded-full flex items-center justify-center border border-purple-50 shadow-sm"
           >
-            <span className="material-symbols-outlined text-[#181411]">
+            <span className="material-symbols-outlined text-aura-plum">
               arrow_back
             </span>
           </button>
-          <h1 className="text-3xl font-black text-[#181411]">
+          <h1 className="text-5xl font-serif text-aura-plum tracking-tight">
             Finaliza tu reserva
           </h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            {/* 1. SELECCIONAR FECHA */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="bg-orange-100 text-[#f48c25] p-2 rounded-lg material-symbols-outlined">
-                  calendar_today
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          <div className="lg:col-span-8 space-y-8">
+            <section className={sectionCard}>
+              <div className="flex items-center gap-4 mb-8">
+                <span className="bg-purple-100 text-aura-plum p-3 rounded-2xl material-symbols-outlined">
+                  calendar_month
                 </span>
-                <h2 className="text-xl font-bold text-[#181411]">
-                  Elige el día de tu cita
+                <h2 className="text-2xl font-serif text-aura-plum">
+                  ¿Qué día prefieres?
                 </h2>
               </div>
-
               <input
                 type="date"
-                className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f48c25]/50 focus:border-[#f48c25] outline-none text-lg"
+                className="w-full bg-white/80 border border-purple-100 rounded-2xl px-6 py-5 text-aura-plum font-medium outline-none transition-all text-lg"
                 min={new Date().toISOString().split("T")[0]}
                 value={selectedDate}
                 onChange={handleDateChange}
               />
-            </div>
+            </section>
 
-            {/* 2. SELECCIONAR HORA */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="bg-orange-100 text-[#f48c25] p-2 rounded-lg material-symbols-outlined">
+            <section className={sectionCard}>
+              <div className="flex items-center gap-4 mb-8">
+                <span className="bg-purple-100 text-aura-plum p-3 rounded-2xl material-symbols-outlined">
                   schedule
                 </span>
-                <h2 className="text-xl font-bold text-[#181411]">
-                  Horarios disponibles
+                <h2 className="text-2xl font-serif text-aura-plum">
+                  Horas disponibles
                 </h2>
               </div>
-
-              {availableTimeSlots.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-60 overflow-y-auto p-2">
+              {loading ? (
+                <p className="text-center italic text-aura-plum animate-pulse">
+                  Comprobando disponibilidad...
+                </p>
+              ) : availableTimeSlots.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
                   {availableTimeSlots.map((time) => (
                     <button
                       key={time}
-                      onClick={() => handleTimeChange(time)}
-                      className={`py-3 rounded-xl font-bold text-sm transition-all border ${
-                        selectedTime === time
-                          ? "bg-[#181411] text-white border-[#181411] shadow-md"
-                          : "bg-white text-gray-600 border-gray-100 hover:border-[#f48c25] hover:text-[#f48c25]"
-                      }`}
+                      onClick={() => {
+                        setSelectedTime(time);
+                        setBackendError("");
+                      }}
+                      className={`py-4 rounded-2xl font-bold text-sm transition-all border ${selectedTime === time ? "bg-aura-plum text-white shadow-xl scale-105" : "bg-white/80 text-aura-plum border-purple-50 hover:border-aura-plum hover:bg-white"}`}
                     >
                       {time}
                     </button>
                   ))}
                 </div>
               ) : (
-                selectedDate &&
-                !backendError && (
-                  <p className="text-gray-500 text-sm">
-                    No hay horarios disponibles para este día.
+                <div className="py-10 text-center bg-purple-50/50 rounded-[2rem] border border-dashed border-purple-200">
+                  <p className="text-aura-plum/60 italic">
+                    {selectedDate
+                      ? backendError || "No hay huecos disponibles."
+                      : "Elige una fecha para ver las horas."}
                   </p>
-                )
+                </div>
               )}
-            </div>
+            </section>
           </div>
 
-          {/* COLUMNA DERECHA: RESUMEN */}
-          <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 sticky top-24">
-              <h3 className="font-bold text-lg mb-4 border-b border-gray-100 pb-2">
-                Resumen de la cita
+          <aside className="lg:col-span-4">
+            <div className="bg-white/80 backdrop-blur-xl p-8 rounded-[3.5rem] shadow-pearl border border-white sticky top-24">
+              <h3 className="font-serif text-2xl text-aura-plum mb-8 border-b border-purple-50 pb-4">
+                Resumen
               </h3>
-
-              <div className="flex items-center gap-3 mb-6">
-                <div className="size-12 rounded-lg bg-gray-100 overflow-hidden">
-                  <img
-                    src={
-                      salon.salon_picture ||
-                      "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=100"
-                    }
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div>
-                  <p className="font-bold text-[#181411] leading-tight">
+              <div className="flex items-center gap-4 mb-8">
+                <img
+                  src={
+                    salon.salon_picture ||
+                    "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=200"
+                  }
+                  className="size-16 rounded-[1.5rem] object-cover border border-purple-100"
+                  alt=""
+                />
+                <div className="flex-1">
+                  <p className="font-bold text-aura-plum text-lg">
                     {salon.business_name}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest">
                     {salon.business_address}
                   </p>
                 </div>
               </div>
-
-              <div className="space-y-3 mb-6">
+              <div className="space-y-4 mb-10">
                 {cart.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <span className="text-gray-600">{item.name}</span>
-                    <span className="font-bold">
-                      {parseFloat(item.price).toFixed(2).replace(".", ",")} €
+                    <span className="font-serif text-aura-plum">
+                      {parseFloat(item.price).toFixed(2)}€
                     </span>
                   </div>
                 ))}
-                <div className="pt-3 border-t border-gray-100 flex justify-between items-center font-black text-lg text-[#181411]">
-                  <span>Total</span>
-                  <span>
-                    {(totalPrice || 0).toFixed(2).replace(".", ",")} €
-                  </span>
+                <div className="pt-6 border-t border-purple-50">
+                  <div className="flex justify-between text-2xl font-serif text-aura-plum">
+                    <span>Total</span>
+                    <span>{totalPrice.toFixed(2)}€</span>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-400 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm">
-                    schedule
-                  </span>
-                  Duración estimada: {totalDuration} min
-                </p>
               </div>
-
-              {/* CAJA DE ERROR */}
               {backendError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                  <span className="material-symbols-outlined text-red-500 text-sm mt-0.5">
-                    error
-                  </span>
-                  <p className="text-sm text-red-600 font-medium leading-tight">
-                    {backendError}
-                  </p>
-                </div>
+                <p className="mb-6 p-4 bg-red-50 text-red-500 rounded-2xl text-xs font-bold">
+                  {backendError}
+                </p>
               )}
-
               <button
                 onClick={handleConfirmBooking}
-                disabled={loading}
-                className={`w-full h-14 rounded-xl font-bold text-white text-lg shadow-lg transition-all ${
-                  loading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-[#f48c25] hover:bg-orange-600 active:scale-[0.98]"
-                }`}
+                disabled={loading || !selectedTime}
+                className={pearlBtn}
               >
-                {loading ? "Confirmando..." : "Confirmar Reserva"}
+                {loading ? "Cargando..." : "Confirmar Reserva"}
               </button>
-
-              <p className="text-[10px] text-center text-gray-400 mt-4 px-2">
-                Al confirmar, aceptas nuestras condiciones de cancelación. No se
-                realizará ningún cargo ahora.
-              </p>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
     </main>

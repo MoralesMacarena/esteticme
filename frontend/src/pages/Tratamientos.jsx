@@ -1,6 +1,27 @@
 import { useState, useEffect } from "react";
 import ServiceCard from "../components/ServiceCard";
 
+// 🔥 EL COMPONENTE MÁGICO DE ANIMACIÓN 🔥
+function AnimatedCard({ children, index }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // Cada tarjeta espera su turno (index * 100ms) antes de aparecer
+    const timer = setTimeout(() => setIsVisible(true), index * 100);
+    return () => clearTimeout(timer);
+  }, [index]);
+
+  return (
+    <div
+      className={`transition-all duration-700 ease-out transform ${
+        isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-16"
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function Tratamientos() {
   const [tratamientos, setTratamientos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -27,9 +48,7 @@ export default function Tratamientos() {
         ]);
 
         if (resTratamientos.ok) {
-          const dataTratamientos = (await resTratamientos.ok)
-            ? await resTratamientos.json()
-            : [];
+          const dataTratamientos = await resTratamientos.json();
           setTratamientos(
             Array.isArray(dataTratamientos)
               ? dataTratamientos
@@ -65,16 +84,16 @@ export default function Tratamientos() {
   // --- VARIABLES DE ESTILO ---
   const navBtnBase =
     "whitespace-nowrap text-xs uppercase tracking-[0.2em] px-4 py-2 rounded-full transition-all duration-300";
-  const navBtnActive = "bg-aura-plum text-white shadow-lg font-bold";
+  const navBtnActive = "bg-aura-plum text-white shadow-lg font-bold scale-105";
   const navBtnInactive =
     "text-aura-plum/60 hover:text-aura-plum hover:bg-white/50 font-medium";
 
   return (
-    <div className="bg-aura-lavender font-sans flex flex-col min-h-screen">
+    <div className="bg-aura-lavender font-sans flex flex-col min-h-screen relative">
       {/* SECCIÓN DE NAVEGACIÓN DE CATEGORÍAS */}
       <div className="bg-white/40 backdrop-blur-md border-b border-purple-100 sticky top-20 z-40">
         <div className="mx-auto max-w-7xl px-4">
-          <nav className="flex items-center justify-center gap-4 overflow-x-auto no-scrollbar py-6">
+          <nav className="flex items-center justify-center gap-4 overflow-x-auto no-scrollbar py-6 relative z-50">
             <button
               onClick={() => setSelectedCategory("Todos")}
               className={`${navBtnBase} ${selectedCategory === "Todos" ? navBtnActive : navBtnInactive}`}
@@ -96,10 +115,10 @@ export default function Tratamientos() {
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
-      <main className="flex-grow">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <header className="max-w-3xl mx-auto text-center mb-16">
-            <h1 className="text-aura-plum text-4xl md:text-5xl font-serif tracking-tight mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <main className="flex-grow relative z-10">
+        <div className="mx-auto max-w-7xl px-4 pt-32 pb-16 sm:px-6 lg:px-8 pointer-events-none">
+          <header className="max-w-3xl mx-auto text-center mb-16 pointer-events-auto">
+            <h1 className="text-aura-plum text-4xl md:text-5xl font-serif tracking-tight mb-4 transition-all duration-300">
               {selectedCategory === "Todos"
                 ? "Experiencias de Bienestar"
                 : `Especialistas en ${selectedCategory}`}
@@ -110,33 +129,39 @@ export default function Tratamientos() {
             </p>
           </header>
 
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="w-12 h-12 border-4 border-purple-100 border-t-aura-plum rounded-full animate-spin mb-4"></div>
-              <p className="font-serif italic text-aura-plum">
-                Preparando tu experiencia...
-              </p>
-            </div>
-          ) : filteredTratamientos.length === 0 ? (
-            <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] p-20 text-center border border-dashed border-purple-200">
-              <span className="material-symbols-outlined text-5xl text-purple-200 mb-4">
-                search_off
-              </span>
-              <p className="text-aura-plum font-serif text-xl italic">
-                No hemos encontrado servicios en esta categoría actualmente.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-in fade-in duration-1000">
-              {filteredTratamientos.map((t, index) => (
-                <ServiceCard
-                  key={t.id}
-                  tratamiento={t}
-                  image={stockImages[index % stockImages.length]}
-                />
-              ))}
-            </div>
-          )}
+          <div className="pointer-events-auto">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="w-12 h-12 border-4 border-purple-100 border-t-aura-plum rounded-full animate-spin mb-4"></div>
+                <p className="font-serif italic text-aura-plum">
+                  Preparando tu experiencia...
+                </p>
+              </div>
+            ) : filteredTratamientos.length === 0 ? (
+              <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] p-20 text-center border border-dashed border-purple-200">
+                <span className="material-symbols-outlined text-5xl text-purple-200 mb-4">
+                  search_off
+                </span>
+                <p className="text-aura-plum font-serif text-xl italic">
+                  No hemos encontrado servicios en esta categoría actualmente.
+                </p>
+              </div>
+            ) : (
+              <div
+                key={selectedCategory}
+                className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start overflow-hidden"
+              >
+                {filteredTratamientos.map((t, index) => (
+                  <AnimatedCard key={t.id} index={index}>
+                    <ServiceCard
+                      tratamiento={t}
+                      image={stockImages[t.id % stockImages.length]}
+                    />
+                  </AnimatedCard>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>

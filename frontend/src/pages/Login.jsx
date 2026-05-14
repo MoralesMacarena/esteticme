@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
+  // Renombramos conceptualmente a 'identifier' aunque al backend se lo mandemos como 'username'
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,7 +23,8 @@ export default function Login() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
+        // 🔥 FIX 1: Mandamos 'identifier' (que puede ser email o nick) en el campo 'username' que espera Django
+        body: JSON.stringify({ username: identifier, password }),
       });
 
       const data = await response.json();
@@ -32,9 +34,17 @@ export default function Login() {
         localStorage.setItem("refresh_token", data.refresh);
         localStorage.setItem("user_role", data.role);
 
-        localStorage.setItem("user_name", data.full_name || data.username);
+        const nameToSave =
+          data.full_name ||
+          (data.user && data.user.full_name) ||
+          data.username ||
+          (data.user && data.user.username) ||
+          "Mi Cuenta";
 
-        const returnTo = location.state?.returnTo || "/";
+        localStorage.setItem("user_name", nameToSave);
+
+        // 🔥 FIX 2: Redirigimos a "/perfil" para que el controlador decida qué panel mostrar
+        const returnTo = location.state?.returnTo || "/perfil";
         const savedData = location.state?.savedData || null;
 
         navigate(returnTo, { state: savedData });
@@ -53,7 +63,6 @@ export default function Login() {
   // --- VARIABLES DE ESTILO AURA ---
   const inputStyles =
     "w-full bg-white/80 border border-purple-100 rounded-2xl px-6 py-4 text-aura-plum font-medium focus:ring-4 focus:ring-purple-100 outline-none transition-all placeholder:text-purple-300";
-  // CAMBIO CLAVE: De text-purple-400 a text-aura-plum/80 para mejor contraste
   const labelStyles =
     "block text-[11px] font-black text-aura-plum/80 mb-2 uppercase tracking-[0.2em] ml-2";
   const pearlBtn =
@@ -90,18 +99,18 @@ export default function Login() {
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label htmlFor="username" className={labelStyles}>
-                Usuario
+              <label htmlFor="identifier" className={labelStyles}>
+                Email o Usuario
               </label>
               <input
-                id="username"
-                name="username"
+                id="identifier"
+                name="identifier"
                 type="text"
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className={inputStyles}
-                placeholder="Ej: tu_usuario"
+                placeholder="Ej: marta@gmail.com o cliente_marta"
               />
             </div>
 
