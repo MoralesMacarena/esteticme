@@ -61,11 +61,17 @@ export default function Checkout() {
   const [availabilities, setAvailabilities] = useState([]);
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
 
+  // ESTADOS PARA FIDELIZACIÓN
+  const [userPoints, setUserPoints] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
+
   const BACKEND_URL = "http://127.0.0.1:8000";
 
   useEffect(() => {
+    const token = localStorage.getItem("access_token");
+
+    //Cargar los horarios del salón
     if (salon) {
-      const token = localStorage.getItem("access_token");
       fetch(`${BACKEND_URL}/api/bookings/profesionales/${salon.id}/horarios/`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
@@ -76,7 +82,29 @@ export default function Checkout() {
         })
         .catch(() => setAvailabilities([]));
     }
+
+    //Cargar los puntos VIP del usuario actual
+    if (token) {
+      fetch(`${BACKEND_URL}/api/users/profiles/me/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && data.points) setUserPoints(data.points);
+        });
+    }
   }, [salon]);
+
+  // --- LÓGICA DE DESCUENTO ---
+  // Tasa de conversión: 100 puntos = 1€
+  const CONVERSION_RATE = 100;
+  const maxPossibleDiscount = Math.floor(userPoints / CONVERSION_RATE);
+  // Nos aseguramos de no descontar más dinero de lo que cuesta el servicio
+  const actualDiscount = usePoints
+    ? Math.min(maxPossibleDiscount, totalPrice)
+    : 0;
+  const pointsUsed = actualDiscount * CONVERSION_RATE;
+  const finalPrice = Math.max(0, totalPrice - actualDiscount);
 
   if (!salon || !cart) {
     return (
@@ -96,7 +124,7 @@ export default function Checkout() {
     );
   }
 
-  // --- 2. CAMBIO DE FECHA: AQUÍ ESTÁ LA MAGIA QUE LIBERA EL HUECO ---
+  // --- 2. CAMBIO DE FECHA ---
   const handleDateChange = async (e) => {
     const newDate = e.target.value;
     setBackendError("");
@@ -133,8 +161,6 @@ export default function Checkout() {
         const data = await res.json();
         const bookingsList = Array.isArray(data) ? data : data.results || [];
 
-        // 🔥 EL FILTRO DESTRUTOR DE CANCELADAS 🔥
-        // Nos aseguramos de ignorar la cita sin importar si Django la devuelve en mayúsculas o minúsculas
         const actualOccupied = bookingsList.filter((b) => {
           const status = b.status ? b.status.toLowerCase() : "";
           return status !== "cancelled" && status !== "cancelada";
@@ -144,7 +170,7 @@ export default function Checkout() {
           schedule.start_time,
           schedule.end_time,
           totalDuration || 0,
-          actualOccupied, // Pasamos solo las citas VÁLIDAS
+          actualOccupied,
         );
 
         if (slots.length === 0) {
@@ -177,13 +203,14 @@ export default function Checkout() {
           professional: salon.id,
           booking_date: selectedDate,
           start_time: selectedTime,
-          total_price: totalPrice,
+          discount_amount: actualDiscount,
+          points_used: pointsUsed,
           service_ids: cart.map((item) => item.id),
         }),
       });
       if (response.ok)
         navigate("/success", {
-          state: { salon, selectedDate, selectedTime, totalPrice },
+          state: { salon, selectedDate, selectedTime, totalPrice: finalPrice },
         });
       else setBackendError("Error al reservar.");
     } catch (error) {
@@ -282,6 +309,7 @@ export default function Checkout() {
               <h3 className="font-serif text-2xl text-aura-plum mb-8 border-b border-purple-50 pb-4">
                 Resumen
               </h3>
+
               <div className="flex items-center gap-4 mb-8">
                 <img
                   src={
@@ -300,7 +328,8 @@ export default function Checkout() {
                   </p>
                 </div>
               </div>
-              <div className="space-y-4 mb-10">
+
+              <div className="space-y-4 mb-8">
                 {cart.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <span className="text-gray-600">{item.name}</span>
@@ -309,24 +338,65 @@ export default function Checkout() {
                     </span>
                   </div>
                 ))}
-                <div className="pt-6 border-t border-purple-50">
-                  <div className="flex justify-between text-2xl font-serif text-aura-plum">
-                    <span>Total</span>
-                    <span>{totalPrice.toFixed(2)}€</span>
+              </div>
+
+              {/* 🔥 BLOQUE DE FIDELIZACIÓN (Solo si el usuario tiene mínimo 100 puntos) 🔥 */}
+              {userPoints >= CONVERSION_RATE && (
+                <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 p-5 rounded-3xl mb-8 border border-purple-100 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-aura-plum font-bold text-sm flex items-center gap-1.5 mb-0.5">
+                        <span className="material-symbols-outlined text-yellow-500 text-lg">
+                          stars
+                        </span>
+                        Club VIP
+                      </p>
+                      <p className="text-[11px] text-gray-500 font-medium">
+                        Tienes {userPoints} puntos disponibles
+                      </p>
+                    </div>
+                    {/* Botón Switch */}
+                    <button
+                      onClick={() => setUsePoints(!usePoints)}
+                      className={`w-12 h-6 rounded-full transition-all duration-300 flex items-center px-1 shadow-inner ${usePoints ? "bg-aura-plum justify-end" : "bg-purple-200 justify-start"}`}
+                    >
+                      <div className="w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform"></div>
+                    </button>
                   </div>
+                  {usePoints && (
+                    <p className="text-xs text-green-600 font-bold bg-white/60 p-2 rounded-xl text-center">
+                      ¡Se aplicará un descuento de {actualDiscount.toFixed(2)}€!
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* TOTALES */}
+              <div className="pt-6 border-t border-purple-50 mb-10 space-y-3">
+                {usePoints && actualDiscount > 0 && (
+                  <div className="flex justify-between text-sm font-bold text-green-500">
+                    <span>Descuento VIP ({pointsUsed} pts)</span>
+                    <span>-{actualDiscount.toFixed(2)}€</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-2xl font-serif text-aura-plum">
+                  <span>Total</span>
+                  <span>{finalPrice.toFixed(2)}€</span>
                 </div>
               </div>
+
               {backendError && (
                 <p className="mb-6 p-4 bg-red-50 text-red-500 rounded-2xl text-xs font-bold">
                   {backendError}
                 </p>
               )}
+
               <button
                 onClick={handleConfirmBooking}
                 disabled={loading || !selectedTime}
                 className={pearlBtn}
               >
-                {loading ? "Cargando..." : "Confirmar Reserva"}
+                {loading ? "Procesando..." : "Confirmar Reserva"}
               </button>
             </div>
           </aside>
