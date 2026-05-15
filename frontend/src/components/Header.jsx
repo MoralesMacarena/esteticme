@@ -72,10 +72,12 @@ export default function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
           {/* LOGO */}
-          <Link to="/" className="flex items-center gap-2 z-[110]">
-            <span className="material-symbols-outlined text-aura-plum text-3xl">
-              spa
-            </span>
+          <Link to="/" className="flex items-center gap-3 z-[110]">
+            <img
+              src="/faviconmtrans.svg"
+              alt="Logo EsteticMe"
+              className="w-8 h-8 object-contain"
+            />
             <h1 className="text-aura-plum text-2xl font-serif tracking-tight">
               EsteticMe
             </h1>
