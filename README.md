@@ -44,11 +44,9 @@
 
 ## 📸 Vista Previa
 
-| Dashboard Profesional | Calendario de Citas | Proceso de Reserva |
-| :---: | :---: | :---: |
-| ![Panel](https://via.placeholder.com/300x200?text=Captura+Dashboard) | ![Calendario](https://via.placeholder.com/300x200?text=Captura+Calendario) | ![Checkout](https://via.placeholder.com/300x200?text=Captura+Reserva) |
 
-> *Sustituye estas imágenes por las capturas que has sacado para la memoria.*
+
+
 
 ---
 
@@ -56,7 +54,7 @@
 
 1.  **Clonar el repositorio:**
     ```bash
-    git clone [https://github.com/tu-usuario/esteticme.git](https://github.com/tu-usuario/esteticme.git)
+    git clone https://github.com/MoralesMacarena/esteticme.git
     ```
 
 2.  **Configurar Backend:**
