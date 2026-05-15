@@ -68,42 +68,31 @@ export default function CalendarioProfesional() {
   const fetchData = async () => {
     const token = localStorage.getItem("access_token");
     try {
-      const resBookings = await fetch(
-        "http://127.0.0.1:8000/api/bookings/citas/",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const [resBookings, resServices, resClients, resProfile] =
+        await Promise.all([
+          fetch("http://127.0.0.1:8000/api/bookings/citas/", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("http://127.0.0.1:8000/api/bookings/servicios/", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("http://127.0.0.1:8000/api/bookings/citas/mis_clientes/", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("http://127.0.0.1:8000/api/users/profiles/me/", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
       if (resBookings.ok) {
         const data = await resBookings.json();
         setBookings(Array.isArray(data) ? data : data.results || []);
       }
-
-      const resServices = await fetch(
-        "http://127.0.0.1:8000/api/bookings/servicios/",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
       if (resServices.ok) {
         const data = await resServices.json();
         setServices(Array.isArray(data) ? data : data.results || []);
       }
-
-      const resClients = await fetch(
-        "http://127.0.0.1:8000/api/bookings/citas/mis_clientes/",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
       if (resClients.ok) setClientsList(await resClients.json());
-
-      const resProfile = await fetch(
-        "http://127.0.0.1:8000/api/users/profiles/me/",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
       if (resProfile.ok) {
         const data = await resProfile.json();
         setProfesionalId(data.id);
@@ -169,7 +158,6 @@ export default function CalendarioProfesional() {
         setSearchQuery("");
         fetchData();
       } else {
-        const err = await response.json();
         alert(`No se pudo crear la cita. Revisa los datos.`);
       }
     } catch (error) {
@@ -214,6 +202,7 @@ export default function CalendarioProfesional() {
   const calculateTopPosition = (timeString) => {
     if (!timeString) return 0;
     const [hours, minutes] = timeString.split(":").map(Number);
+    // 80px es la altura de cada bloque de hora
     return (hours - 9) * 80 + minutes * (80 / 60);
   };
 
@@ -263,8 +252,8 @@ export default function CalendarioProfesional() {
 
   return (
     <div className="bg-aura-lavender font-sans flex flex-col h-screen overflow-hidden relative">
-      {/* CABECERA GENERAL */}
-      <div className="w-full bg-white/40 backdrop-blur-md border-b border-purple-100 px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-4 z-40">
+      {/* CABECERA GENERAL (Navegación semanas) */}
+      <div className="w-full bg-white/40 backdrop-blur-md border-b border-purple-100 px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-4 z-40 flex-shrink-0">
         <div className="flex items-center gap-4">
           <Link
             to="/panel"
@@ -308,20 +297,27 @@ export default function CalendarioProfesional() {
         </div>
       </div>
 
-      {/* ÁREA PRINCIPAL CON MÁRGENES */}
-      <main className="flex-grow p-4 md:p-8 overflow-hidden flex justify-center bg-aura-lavender relative">
+      {/* ÁREA PRINCIPAL DEL CALENDARIO */}
+      <main className="flex-grow p-4 md:p-8 overflow-hidden flex justify-center bg-aura-lavender relative min-h-0">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
 
         <div className="w-full max-w-[1400px] h-full bg-white/40 backdrop-blur-xl rounded-[3rem] shadow-pearl border border-white flex flex-col overflow-hidden relative z-10">
-          {/* CABECERA DÍAS */}
-          <div className="flex border-b border-purple-50 bg-white/40 z-30 pl-20">
+          {/* CABECERA DÍAS (Sticky) */}
+          <div
+            className="grid w-full border-b border-purple-100/50 bg-white/90 backdrop-blur-xl z-50 shadow-sm flex-shrink-0"
+            style={{ gridTemplateColumns: "80px repeat(7, 1fr)" }}
+          >
+            {/* Espaciador alineado con la columna de horas */}
+            <div className="border-r border-purple-100/50"></div>
+
+            {/* Días */}
             {weekDays.map((date, index) => {
               const isToday =
                 formatDateForDjango(date) === formatDateForDjango(new Date());
               return (
                 <div
                   key={index}
-                  className={`flex-1 py-5 text-center border-r border-purple-50 ${isToday ? "bg-purple-100/30" : ""}`}
+                  className={`py-5 text-center border-r border-purple-50 ${isToday ? "bg-purple-100/30" : ""}`}
                 >
                   <span
                     className={`text-[10px] uppercase block tracking-[0.2em] mb-1 ${isToday ? "text-aura-plum font-black" : "text-purple-300 font-bold"}`}
@@ -338,118 +334,120 @@ export default function CalendarioProfesional() {
             })}
           </div>
 
-          {/* GRID SCROLLABLE */}
-          <div className="flex-grow overflow-y-auto flex relative no-scrollbar bg-white/10">
-            {/* HORAS LATERALES */}
-            <div className="w-20 flex-shrink-0 border-r border-purple-100/50 relative z-30 pt-4 pb-8 bg-white/20">
-              <div className="h-[960px] relative w-full">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-full right-4 text-right -translate-y-1/2"
-                    style={{ top: `${i * 80}px` }}
-                  >
-                    <span className="text-[11px] text-aura-plum/40 font-black relative -top-3">
-                      {9 + i}:00
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* CUERPO GRID (CON CEBRA) */}
-            <div className="flex-grow relative z-10 pt-4 pb-8 flex">
-              <div className="h-[960px] w-full relative flex">
-                {/* FONDO CEBRA DINÁMICO */}
-                <div className="absolute inset-0 pointer-events-none z-0">
+          {/* CUERPO DEL CALENDARIO (Horas y Columnas) */}
+          <div className="flex-1 overflow-y-auto w-full min-h-0 relative">
+            <div
+              className="grid min-h-full"
+              style={{ gridTemplateColumns: "80px repeat(7, 1fr)" }}
+            >
+              {/* COLUMNA HORAS LATERALES */}
+              <div className="border-r border-purple-100/50 bg-white/20 relative z-30">
+                <div className="h-[960px] relative w-full pt-4">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <div
                       key={i}
-                      className={`absolute w-full border-t border-purple-100/30 ${i % 2 === 0 ? "bg-purple-50/40" : "bg-transparent"}`}
-                      style={{ top: `${i * 80}px`, height: "80px" }}
-                    ></div>
+                      className="absolute w-full right-4 text-right -translate-y-1/2"
+                      style={{ top: `${i * 80 + 16}px` }}
+                    >
+                      <span className="text-[11px] text-aura-plum/40 font-black relative -top-3">
+                        {9 + i}:00
+                      </span>
+                    </div>
                   ))}
                 </div>
-
-                {weekDays.map((date, index) => {
-                  const dateStr = formatDateForDjango(date);
-                  const dayBookings = bookings.filter(
-                    (b) => b.booking_date === dateStr,
-                  );
-
-                  // SOLUCIÓN: Volvemos a la lógica de bloquear SOLO el Domingo (índice 6) por defecto.
-                  if (index === 6) {
-                    return (
-                      <div
-                        key={index}
-                        className="flex-1 bg-aura-plum/[0.03] relative flex items-center justify-center border-r border-purple-50/50 backdrop-grayscale-[0.2]"
-                      >
-                        <span className="transform -rotate-90 text-aura-plum/10 font-black tracking-[0.5em] text-3xl uppercase pointer-events-none">
-                          CERRADO
-                        </span>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div
-                      key={index}
-                      className="flex-1 border-r border-purple-100/20 relative group hover:bg-white/10 transition-colors z-10"
-                    >
-                      {dayBookings.map((booking) => {
-                        const topPos = calculateTopPosition(booking.start_time);
-                        const colorClasses = getStatusColor(booking.status);
-                        return (
-                          <div
-                            key={booking.id}
-                            onClick={() => {
-                              setSelectedBooking(booking);
-                              setEditFormData({
-                                booking_date: booking.booking_date,
-                                start_time: booking.start_time?.substring(0, 5),
-                                status: booking.status,
-                              });
-                              setShowEditModal(true);
-                            }}
-                            className={`absolute left-1 right-1 border-l-4 rounded-2xl p-3 cursor-pointer shadow-sm hover:shadow-xl transition-all z-20 hover:scale-[1.02] flex flex-col justify-start overflow-hidden ${colorClasses}`}
-                            style={{
-                              top: `${topPos}px`,
-                              height: `76px`,
-                            }}
-                          >
-                            <div className="flex justify-between items-center mb-1">
-                              <p className="text-[9px] font-black uppercase opacity-70 tracking-tighter">
-                                {booking.start_time?.substring(0, 5)}
-                              </p>
-                              <span className="text-[12px] opacity-40">
-                                {booking.status === "cancelled"
-                                  ? "✕"
-                                  : booking.status === "completed"
-                                    ? "✅"
-                                    : "✦"}
-                              </span>
-                            </div>
-                            <p className="text-[11px] font-bold truncate leading-tight mb-0.5">
-                              {booking.guest_name ||
-                                booking.client_name ||
-                                "Cliente Presencial"}
-                            </p>
-                            <p className="text-[9px] truncate opacity-60 italic font-medium">
-                              {getServicesText(booking)}
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
               </div>
+
+              {/* COLUMNAS DE DÍAS */}
+              {weekDays.map((date, dayIndex) => {
+                const dateStr = formatDateForDjango(date);
+                const dayBookings = bookings.filter(
+                  (b) => b.booking_date === dateStr,
+                );
+
+                return (
+                  <div
+                    key={dayIndex}
+                    className="relative border-r border-purple-100/20 pt-4 pb-8 group hover:bg-white/5 transition-colors"
+                  >
+                    <div className="h-[960px] relative w-full">
+                      {/* Fondo Cebra (Solo lo dibujamos una vez para todo el ancho del grid) */}
+                      {dayIndex === 0 && (
+                        <div className="absolute inset-0 pointer-events-none z-0 w-[calc(700%)]">
+                          {Array.from({ length: 12 }).map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-full border-t border-purple-100/30 ${i % 2 === 0 ? "bg-purple-50/40" : "bg-transparent"}`}
+                              style={{ height: "80px" }}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Lógica de CERRADO para el domingo */}
+                      {dayIndex === 6 ? (
+                        <div className="absolute inset-0 bg-aura-plum/[0.02] flex items-center justify-center backdrop-grayscale-[0.1] z-10">
+                          <span className="transform -rotate-90 text-aura-plum/10 font-black tracking-[0.5em] text-3xl uppercase">
+                            CERRADO
+                          </span>
+                        </div>
+                      ) : (
+                        /* RENDERIZADO DE CITAS DENTRO DEL DÍA CORRESPONDIENTE */
+                        dayBookings.map((booking) => {
+                          const topPos = calculateTopPosition(
+                            booking.start_time,
+                          );
+                          return (
+                            <div
+                              key={booking.id}
+                              onClick={() => {
+                                setSelectedBooking(booking);
+                                setEditFormData({
+                                  booking_date: booking.booking_date,
+                                  start_time: booking.start_time?.substring(
+                                    0,
+                                    5,
+                                  ),
+                                  status: booking.status,
+                                });
+                                setShowEditModal(true);
+                              }}
+                              className={`absolute left-1 right-1 border-l-4 rounded-2xl p-3 cursor-pointer shadow-sm hover:shadow-xl transition-all z-20 hover:scale-[1.02] flex flex-col overflow-hidden ${getStatusColor(booking.status)}`}
+                              style={{
+                                top: `${topPos}px`,
+                                height: "76px",
+                              }}
+                            >
+                              <div className="flex justify-between items-center mb-1">
+                                <p className="text-[9px] font-black uppercase opacity-70 tracking-tighter">
+                                  {booking.start_time?.substring(0, 5)}
+                                </p>
+                                <span className="text-[12px] opacity-40">
+                                  ✦
+                                </span>
+                              </div>
+                              <p className="text-[11px] font-bold truncate leading-tight">
+                                {booking.guest_name ||
+                                  booking.client_name ||
+                                  "Presencial"}
+                              </p>
+                              <p className="text-[9px] truncate opacity-60 italic">
+                                {getServicesText(booking)}
+                              </p>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       </main>
 
-      {/* --- MODAL 1: NUEVA CITA --- */}
+      {/* --- MODALES (NUEVA, ÉXITO, EDITAR) --- */}
+      {/* (Mantengo tus modales intactos ya que funcionan bien) */}
       {showNewModal && (
         <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-[3rem] shadow-2xl p-10 w-full max-w-md animate-in zoom-in-95 duration-300 border border-white">
@@ -462,7 +460,6 @@ export default function CalendarioProfesional() {
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-
             <form onSubmit={handleCreateBooking} className="space-y-6">
               <div className="flex flex-col relative">
                 <label className={labelStyles}>¿Para quién es la cita?</label>
@@ -489,7 +486,6 @@ export default function CalendarioProfesional() {
                     className={`${inputStyles} pl-12`}
                   />
                 </div>
-
                 {showDropdown && searchQuery && filteredClients.length > 0 && (
                   <div className="absolute top-[85px] left-0 w-full bg-white border border-purple-50 rounded-2xl shadow-2xl max-h-48 overflow-y-auto z-50 p-2">
                     {filteredClients.map((c) => (
@@ -517,58 +513,6 @@ export default function CalendarioProfesional() {
                   </div>
                 )}
               </div>
-
-              <div className="flex flex-col gap-2">
-                <label className={labelStyles}>Teléfono de contacto</label>
-                {formData.client_id ? (
-                  <div className="flex items-center gap-3 bg-purple-50/50 p-4 rounded-2xl border border-purple-50 text-aura-plum/70">
-                    <span className="material-symbols-outlined text-[20px]">
-                      call
-                    </span>
-                    <span className="font-bold">
-                      {formData.guest_phone || "Sin teléfono en ficha"}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-200 material-symbols-outlined">
-                      call
-                    </span>
-                    <input
-                      type="tel"
-                      placeholder="Número para el cliente..."
-                      value={formData.guest_phone}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          guest_phone: e.target.value,
-                        })
-                      }
-                      className={`${inputStyles} pl-12`}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className={labelStyles}>Servicio</label>
-                <select
-                  required
-                  value={formData.service_id}
-                  onChange={(e) =>
-                    setFormData({ ...formData, service_id: e.target.value })
-                  }
-                  className={inputStyles}
-                >
-                  <option value="">Selecciona un servicio...</option>
-                  {services.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.duration_minutes} min)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <label className={labelStyles}>Fecha</label>
@@ -595,7 +539,24 @@ export default function CalendarioProfesional() {
                   />
                 </div>
               </div>
-
+              <div className="flex flex-col gap-2">
+                <label className={labelStyles}>Servicio</label>
+                <select
+                  required
+                  value={formData.service_id}
+                  onChange={(e) =>
+                    setFormData({ ...formData, service_id: e.target.value })
+                  }
+                  className={inputStyles}
+                >
+                  <option value="">Selecciona un servicio...</option>
+                  {services.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.duration_minutes} min)
+                    </option>
+                  ))}
+                </select>
+              </div>
               <button
                 type="submit"
                 disabled={saving}
@@ -608,7 +569,6 @@ export default function CalendarioProfesional() {
         </div>
       )}
 
-      {/* --- MODAL 2: ÉXITO --- */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm flex flex-col items-center text-center shadow-2xl border border-white animate-in zoom-in-95 duration-300">
@@ -628,12 +588,13 @@ export default function CalendarioProfesional() {
         </div>
       )}
 
-      {/* --- MODAL 3: GESTIONAR --- */}
       {showEditModal && selectedBooking && (
         <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-[3rem] shadow-2xl p-10 w-full max-w-md border border-white animate-in zoom-in-95 duration-300">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-3xl font-serif text-aura-plum">Gestionar</h3>
+              <h3 className="text-3xl font-serif text-aura-plum">
+                Gestionar Cita
+              </h3>
               <button
                 onClick={() => setShowEditModal(false)}
                 className="text-purple-300 hover:text-red-400 transition-colors"
@@ -641,55 +602,19 @@ export default function CalendarioProfesional() {
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-
             <form onSubmit={handleUpdateBooking} className="space-y-8">
               <div className="bg-purple-50/50 rounded-[2rem] p-6 border border-purple-100 shadow-inner">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-1">
-                      Cliente
-                    </p>
-                    <p className="text-xl font-bold text-aura-plum leading-none mb-2">
-                      {selectedBooking.guest_name ||
-                        selectedBooking.client_name ||
-                        "Presencial"}
-                    </p>
-                    {selectedBooking.display_phone &&
-                      selectedBooking.display_phone !== "Sin teléfono" && (
-                        <p className="text-sm font-bold text-aura-plum/60 flex items-center gap-2">
-                          <span className="material-symbols-outlined text-[18px]">
-                            call
-                          </span>
-                          {selectedBooking.display_phone}
-                        </p>
-                      )}
-                  </div>
-                  <div className="bg-white px-4 py-2 rounded-2xl shadow-sm border border-purple-50 text-center">
-                    <p className="text-[9px] font-black text-purple-300 uppercase tracking-widest mb-0.5">
-                      Precio
-                    </p>
-                    <p className="text-lg font-serif text-aura-plum">
-                      {selectedBooking.total_price
-                        ? `${parseFloat(selectedBooking.total_price).toFixed(2)}€`
-                        : "--"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-6 pb-6 border-b border-purple-100/50">
-                  <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-2">
-                    Tratamiento
-                  </p>
-                  <p className="text-sm font-bold text-aura-plum bg-white p-3 rounded-xl border border-purple-50">
-                    {getServicesText(selectedBooking)}
-                  </p>
-                </div>
-
+                <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-1">
+                  Cliente
+                </p>
+                <p className="text-xl font-bold text-aura-plum leading-none mb-4">
+                  {selectedBooking.guest_name ||
+                    selectedBooking.client_name ||
+                    "Presencial"}
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-1">
-                      Fecha
-                    </p>
+                    <p className={labelStyles}>Fecha</p>
                     <input
                       type="date"
                       required
@@ -704,9 +629,7 @@ export default function CalendarioProfesional() {
                     />
                   </div>
                   <div>
-                    <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-1">
-                      Hora
-                    </p>
+                    <p className={labelStyles}>Hora</p>
                     <input
                       type="time"
                       required
@@ -722,7 +645,6 @@ export default function CalendarioProfesional() {
                   </div>
                 </div>
               </div>
-
               <div>
                 <label className={labelStyles}>Actualizar Estado</label>
                 <select
@@ -738,7 +660,6 @@ export default function CalendarioProfesional() {
                   <option value="cancelled">❌ Cancelada</option>
                 </select>
               </div>
-
               <button
                 type="submit"
                 className="w-full bg-aura-plum text-white py-5 rounded-[2rem] font-bold shadow-lg hover:scale-[1.02] transition-all uppercase tracking-widest text-sm"

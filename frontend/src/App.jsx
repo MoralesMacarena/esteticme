@@ -22,6 +22,7 @@ import CreatePost from "./pages/CreatePost";
 import BlogDetail from "./pages/BlogDetail";
 import EditPost from "./pages/EditPost";
 import CookieConsent from "./components/CookieConsent";
+import NotFound from "./components/NoFound";
 
 export default function App() {
   return (
@@ -128,6 +129,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         <CookieConsent />

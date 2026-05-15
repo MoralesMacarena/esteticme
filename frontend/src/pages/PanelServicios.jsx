@@ -8,10 +8,15 @@ export default function PanelServicios() {
   const [availabilities, setAvailabilities] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [imageFile, setImageFile] = useState(null);
 
   // --- ESTADOS PARA MODALES (Lógica intacta) ---
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
+
+  // --- ESTADOS PARA MODALES DE ÉXITO ---
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [editingService, setEditingService] = useState(null);
   const [editingDay, setEditingDay] = useState(null);
@@ -74,6 +79,7 @@ export default function PanelServicios() {
 
   // --- HANDLERS SERVICIOS ---
   const openServiceModal = (service = null) => {
+    setImageFile(null);
     if (service) {
       setEditingService(service);
       setServiceForm({
@@ -104,15 +110,32 @@ export default function PanelServicios() {
     const url = editingService
       ? `http://127.0.0.1:8000/api/bookings/servicios/${editingService.id}/`
       : "http://127.0.0.1:8000/api/bookings/servicios/";
-    const method = editingService ? "PATCH" : "POST";
 
+    // Con archivos a veces PATCH da problemas en Django, usamos PUT o POST
+    const method = editingService ? "PUT" : "POST";
+
+    //Creamos el FormData
+    const formData = new FormData();
+    formData.append("name", serviceForm.name);
+    formData.append("description", serviceForm.description);
+    formData.append("price", serviceForm.price);
+    formData.append("duration_minutes", serviceForm.duration_minutes);
+    formData.append("category", serviceForm.category);
+    formData.append("is_active", serviceForm.is_active);
+
+    //Añadimos el archivo de imagen solo si el usuario seleccionó uno
+    if (imageFile) {
+      formData.append("image", imageFile);
+    }
+
+    //Enviamos la petición sin Content-Type
     const response = await fetch(url, {
       method,
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        // Eliminamos el Content-Type para que el navegador lo calcule automáticamente como multipart/form-data
       },
-      body: JSON.stringify(serviceForm),
+      body: formData,
     });
 
     if (response.ok) {
@@ -122,7 +145,18 @@ export default function PanelServicios() {
           ? services.map((s) => (s.id === saved.id ? saved : s))
           : [saved, ...services],
       );
+      // 1. Cerramos el modal del formulario
       setIsServiceModalOpen(false);
+
+      // 2. Configuramos el mensaje y abrimos el modal de éxito
+      setSuccessMessage(
+        editingService
+          ? "¡Tratamiento actualizado correctamente!"
+          : "¡Nuevo tratamiento añadido al catálogo!",
+      );
+      setShowSuccessModal(true);
+    } else {
+      console.error("Error al guardar el servicio");
     }
   };
 
@@ -454,6 +488,35 @@ export default function PanelServicios() {
               </button>
             </div>
             <form onSubmit={handleServiceSubmit} className="p-10 space-y-6">
+              {/* Nuevo Input para la Imagen con Previsualización */}
+              <div>
+                <label className={labelStyles}>Imagen (Opcional)</label>
+
+                {/* --- CAJA DE PREVISUALIZACIÓN --- */}
+                {(imageFile || (editingService && editingService.image)) && (
+                  <div className="mb-4 relative rounded-[1.5rem] overflow-hidden h-40 w-full sm:w-1/2 border border-purple-100 shadow-sm">
+                    <img
+                      src={
+                        imageFile
+                          ? URL.createObjectURL(imageFile) // 1. Si acaba de elegir una nueva, la mostramos al instante
+                          : editingService.image.startsWith("http")
+                            ? editingService.image
+                            : `http://127.0.0.1:8000${editingService.image}` // 2. Si no hay nueva, mostramos la que ya estaba en el servidor
+                      }
+                      alt="Vista previa del tratamiento"
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImageFile(e.target.files[0])}
+                  className="w-full bg-white/80 border border-purple-100 rounded-2xl px-4 py-3 text-aura-plum font-medium focus:ring-4 focus:ring-purple-100 outline-none transition-all 
+                  file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-purple-50 file:text-aura-plum hover:file:bg-purple-100 cursor-pointer"
+                />
+              </div>
               <div>
                 <label className={labelStyles}>Nombre del servicio</label>
                 <input
@@ -546,6 +609,30 @@ export default function PanelServicios() {
                 Guardar Servicio
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {/* --- MODAL DE ÉXITO ESTILO AURA --- */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[3rem] border border-white shadow-2xl p-10 w-full max-w-sm flex flex-col items-center text-center animate-in zoom-in-95 duration-300">
+            <div className="w-24 h-24 bg-green-50 text-green-400 rounded-full flex items-center justify-center mb-6 shadow-inner border border-green-100">
+              <span className="material-symbols-outlined text-6xl">
+                check_circle
+              </span>
+            </div>
+            <h3 className="text-2xl font-serif text-aura-plum mb-3">
+              ¡Guardado con éxito!
+            </h3>
+            <p className="text-gray-500 font-light italic mb-8">
+              {successMessage}
+            </p>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full bg-aura-plum text-white py-4 rounded-2xl font-bold hover:scale-[1.02] transition-all shadow-md"
+            >
+              Entendido
+            </button>
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 export default function PanelProfesional() {
   const [salonName, setSalonName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [profesionalId, setProfesionalId] = useState(null);
   const [stats, setStats] = useState({
     ingresosTotales: 0,
     citasTerminadas: 0,
@@ -29,6 +30,7 @@ export default function PanelProfesional() {
         if (response.ok) {
           const data = await response.json();
           setSalonName(data.business_name || data.full_name || "Mi Negocio");
+          setProfesionalId(data.id);
         }
       } catch (error) {
         console.error("Error al cargar el perfil:", error);
@@ -101,6 +103,17 @@ export default function PanelProfesional() {
             <p className="text-gray-500 font-light italic mt-3 text-lg">
               Tu resumen de actividad y bienestar.
             </p>
+            {profesionalId && (
+              <Link
+                to={`/salones/${profesionalId}`}
+                className="flex items-center gap-2 px-6 py-2.5 bg-purple-50 text-aura-plum font-bold rounded-full border border-purple-100 shadow-sm transition-all hover:bg-purple-100 hover:scale-105 active:scale-95 w-fit"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  visibility
+                </span>
+                Ver mi escaparate público
+              </Link>
+            )}
           </div>
 
           {/* DASHBOARD DE ESTADÍSTICAS */}

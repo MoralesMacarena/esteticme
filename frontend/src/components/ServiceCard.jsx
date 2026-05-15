@@ -8,12 +8,20 @@ export default function ServiceCard({ tratamiento, image }) {
     business_address: tratamiento.salon_address,
   };
 
+  // 🔥 NUEVO: Resolución inteligente de la imagen
+  // Si el servicio tiene imagen propia, comprobamos si trae el dominio. Si no lo trae, se lo añadimos.
+  // Si no tiene imagen propia, usamos la prop 'image' (por si pasas alguna random) o el fallback de Unsplash.
+  const imageUrl = tratamiento.image
+    ? tratamiento.image.startsWith("http")
+      ? tratamiento.image
+      : `http://127.0.0.1:8000${tratamiento.image}`
+    : image ||
+      "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800";
+
   // --- VARIABLES DE ESTILO AURA ---
-  // FIX: Añadido overflow-hidden para que nada se salga del borde redondeado de 2rem
   const cardStyles =
     "flex flex-col rounded-[2rem] overflow-hidden p-3 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_15px_35px_rgba(200,160,255,0.15)] transition-all duration-500 border border-purple-50/50 group";
 
-  // FIX: La escala (scale) se queda aquí, pero el overflow-hidden lo ponemos en un padre para recortar las esquinas
   const imageStyles =
     "w-full aspect-video bg-cover bg-center transition-transform duration-700 group-hover:scale-[1.03]";
 
@@ -29,15 +37,14 @@ export default function ServiceCard({ tratamiento, image }) {
       className={cardStyles}
     >
       {/* Contenedor de Imagen Blindado */}
-      {/* FIX: Este div envuelve a la imagen, asegura que las esquinas sean siempre redondas y recorta el zoom */}
       <div className="rounded-[1.25rem] overflow-hidden mb-4 relative">
         <div
           className={imageStyles}
           style={{
-            backgroundImage: `url("${image || "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800"}")`,
+            // 🔥 Usamos nuestra nueva constante con la imagen resuelta
+            backgroundImage: `url("${imageUrl}")`,
           }}
         />
-        {/* ELIMINADA la capa bg-black/5 para que las fotos luzcan a todo color desde el principio */}
       </div>
 
       <div className="flex w-full grow flex-col px-2 pb-2">
