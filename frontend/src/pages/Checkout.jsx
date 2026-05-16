@@ -206,6 +206,7 @@ export default function Checkout() {
           discount_amount: actualDiscount,
           points_used: pointsUsed,
           service_ids: cart.map((item) => item.id),
+          use_points: usePoints,
         }),
       });
       if (response.ok)
