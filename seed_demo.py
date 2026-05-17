@@ -2,7 +2,7 @@ import os
 import django
 from datetime import date, time, timedelta
 
-# Configuración de Django (Asegúrate de que 'core.settings' es tu carpeta principal)
+# Configuración de Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings') 
 django.setup()
 
@@ -15,8 +15,6 @@ User = get_user_model()
 
 def create_demo():
     print("🧹 1. Limpiando la base de datos...")
-    # Al borrar los usuarios y categorías, Django automáticamente borra 
-    # en cascada los servicios, reservas, posts y comentarios asociados.
     User.objects.all().delete()
     Category.objects.all().delete()
     Post.objects.all().delete()
@@ -63,7 +61,7 @@ def create_demo():
         full_name='Marta Sánchez',
         role='client',
         phone='655999888',
-        points=500  # 🔥 Le regalamos 500 puntos para testear
+        points=500  # Puntos para gastar en la demo
     )
 
     cliente_pablo = User.objects.create_user(
@@ -73,18 +71,16 @@ def create_demo():
         full_name='Pablo López',
         role='client',
         phone='644777666',
-        points=25   # Pablo tiene unos poquitos
+        points=25   # Puntos iniciales
     )
 
     print("🏷️ 5. Creando Categorías...")
-    # Usamos iconos de Google Fonts reales según tu modelo
     cat_peluqueria = Category.objects.create(name='Peluquería', icon='content_cut')
     cat_estetica = Category.objects.create(name='Estética', icon='spa')
     cat_barberia = Category.objects.create(name='Barbería', icon='face')
     cat_bienestar = Category.objects.create(name='Bienestar', icon='self_care')
 
     print("💆‍♀️ 6. Creando Servicios...")
-    # Servicios Barbería
     serv_corte = Service.objects.create(
         professional=pro_barber,
         category=cat_barberia,
@@ -94,7 +90,6 @@ def create_demo():
         duration_minutes=45
     )
     
-    # Servicios Estética
     serv_limpieza = Service.objects.create(
         professional=pro_luxe,
         category=cat_estetica,
@@ -105,20 +100,27 @@ def create_demo():
     )
 
     print("📅 7. Configurando Horarios (Availability)...")
-    # Le ponemos horario al Barbero de Lunes (0) a Viernes (4) de 09:00 a 14:00
     for dia in range(5):
         Availability.objects.create(
             professional=pro_barber,
             day_of_week=dia,
-            start_time=time(9, 0), # 09:00
-            end_time=time(14, 0)   # 14:00
+            start_time=time(9, 0),
+            end_time=time(14, 0)
+        )
+        # Añadimos horario a Luxe Beauty también para poder hacer la demo de reservas
+        Availability.objects.create(
+            professional=pro_luxe,
+            day_of_week=dia,
+            start_time=time(10, 0),
+            end_time=time(19, 0)
         )
 
-    print("📝 8. Creando Reservas con Fidelización...")
+    print("📝 8. Creando Reservas...")
     fecha_manana = date.today() + timedelta(days=1)
+    fecha_pasada = date.today() - timedelta(days=5)
     
-    # Reserva de Pablo: Gana puntos
-    reserva_pablo = Booking.objects.create(
+    # Reserva Futura de Pablo (Barbería)
+    reserva_pablo_futura = Booking.objects.create(
         client=cliente_pablo,
         professional=pro_barber,
         booking_date=fecha_manana,
@@ -126,11 +128,24 @@ def create_demo():
         end_time=time(10, 45),
         status='confirmed',
         total_price=25.00,
-        points_earned=25  # 🔥 Ganó 25 puntos en esta cita
+        points_earned=25
     )
-    reserva_pablo.services.add(serv_corte)
+    reserva_pablo_futura.services.add(serv_corte)
 
-    # Reserva de Marta: Usa puntos (Descuento)
+    # Reserva Pasada de Pablo (Luxe Beauty) -> Para poder ponerle reseña
+    reserva_pablo_pasada = Booking.objects.create(
+        client=cliente_pablo,
+        professional=pro_luxe,
+        booking_date=fecha_pasada,
+        start_time=time(11, 0),
+        end_time=time(12, 0),
+        status='completed',
+        total_price=60.00,
+        points_earned=60
+    )
+    reserva_pablo_pasada.services.add(serv_limpieza)
+
+    # Reserva Pasada de Marta (Luxe Beauty) -> Corrección Matemática Aplicada
     reserva_marta = Booking.objects.create(
         client=cliente_marta,
         professional=pro_luxe,
@@ -138,16 +153,29 @@ def create_demo():
         start_time=time(17, 0),
         end_time=time(18, 0),
         status='completed',
-        total_price=50.00,     # Costaba 60, pero pagó 50
-        points_used=100,       # 🔥 Gastó 100 puntos
-        discount_amount=10.00, # 🔥 Se ahorró 10€
-        points_earned=5        # Y ganó 5 por lo que pagó
+        total_price=55.00,     # Costaba 60, paga 55
+        points_used=500,       # Gasta 500 puntos exactos (5€)
+        discount_amount=5.00,  # Descuento de 5€
+        points_earned=55       # Gana puntos por lo pagado
     )
     reserva_marta.services.add(serv_limpieza)
 
-    print("📰 9. Creando Posts para el Magazine...")
+    print("⭐ 9. Creando Reseñas de 5 Estrellas...")
+    Review.objects.create(
+        booking=reserva_marta,
+        rating=5,
+        comment='¡Increíble! El trato de Elena es inmejorable y el tratamiento me dejó la piel perfecta. Repetiré sin duda.'
+    )
+    
+    Review.objects.create(
+        booking=reserva_pablo_pasada,
+        rating=5,
+        comment='Fui para prepararme para un evento y el resultado fue espectacular. 100% recomendable.'
+    )
+
+    print("📰 10. Creando Posts para el Magazine...")
     post1 = Post.objects.create(
-        author=pro_barber.full_name, # Guardamos el nombre del barbero
+        author=pro_barber.full_name,
         title='Tendencias en cortes de pelo para este verano',
         slug='tendencias-cortes-verano',
         category=cat_barberia,
@@ -166,7 +194,7 @@ def create_demo():
         image='https://images.unsplash.com/photo-1570172619644-dfd03ed5d881'
     )
 
-    print("💬 10. Añadiendo Comentarios...")
+    print("💬 11. Añadiendo Comentarios al Magazine...")
     Comment.objects.create(
         post=post1,
         user=cliente_pablo,

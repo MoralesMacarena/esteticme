@@ -146,6 +146,31 @@ class ServiceViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(professional=self.request.user)
+    def destroy(self, request, *args, **kwargs):
+        service = self.get_object()
+        
+        # 1. Miramos si el servicio se ha usado alguna vez en la historia
+        if service.bookings.exists():
+            
+            # 2. Miramos si hay citas futuras que dependan de él
+            citas_activas = service.bookings.filter(status__in=['pending', 'confirmed'])
+            if citas_activas.exists():
+                return Response(
+                    {"error": "Hay citas pendientes para este servicio. Cancélalas o termínalas antes de retirarlo del catálogo."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # 3. SOFT DELETE: Tiene historial, pero no citas futuras. Lo desactivamos.
+            service.is_active = False
+            service.save()
+            return Response(
+                {"message": "Servicio archivado. Se mantiene el historial pero ya no es visible."}, 
+                status=status.HTTP_200_OK
+            )
+            
+        # 4. HARD DELETE: Nunca nadie lo reservó, así que lo borramos de verdad.
+        self.perform_destroy(service)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AvailabilityViewSet(viewsets.ModelViewSet):

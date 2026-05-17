@@ -14,9 +14,14 @@ export default function PanelServicios() {
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
 
-  // --- ESTADOS PARA MODALES DE ÉXITO ---
+  // --- ESTADOS PARA MODALES DE ÉXITO/ERROR ---
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // --- ESTADOS PARA MODALES DE CONFIRMACIÓN ---
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [editingService, setEditingService] = useState(null);
   const [editingDay, setEditingDay] = useState(null);
@@ -226,6 +231,52 @@ export default function PanelServicios() {
     if (res.ok) setAvailabilities(availabilities.filter((a) => a.id !== id));
   };
 
+  // 1. Esta función solo abre el modal de advertencia
+  const handleDeleteClick = () => {
+    setShowConfirmModal(true);
+  };
+
+  // 2. Esta función ejecuta el borrado real (se llama desde dentro del modal)
+  const executeDeleteService = async () => {
+    setShowConfirmModal(false); // Cerramos el modal de advertencia
+
+    const token = localStorage.getItem("access_token");
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/bookings/servicios/${editingService.id}/`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (response.status === 204) {
+        setServices(services.filter((s) => s.id !== editingService.id));
+        setIsServiceModalOpen(false);
+        setSuccessMessage("Tratamiento eliminado completamente.");
+        setShowSuccessModal(true);
+      } else if (response.status === 200) {
+        setServices(
+          services.map((s) =>
+            s.id === editingService.id ? { ...s, is_active: false } : s,
+          ),
+        );
+        setIsServiceModalOpen(false);
+        setSuccessMessage(
+          "Tratamiento archivado. Ya no será visible para los clientes.",
+        );
+        setShowSuccessModal(true);
+      } else {
+        const data = await response.json();
+        setErrorMessage(data.error || "No se pudo retirar el servicio.");
+        setShowErrorModal(true);
+      }
+    } catch (error) {
+      setErrorMessage("Error de conexión al intentar retirar el servicio.");
+      setShowErrorModal(true);
+    }
+  };
+
   // --- VARIABLES DE ESTILO AURA ---
   const pearlBtn =
     "bg-gradient-to-r from-purple-100 via-white to-fuchsia-100 border border-white/60 shadow-pearl text-aura-plum font-bold rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]";
@@ -318,8 +369,13 @@ export default function PanelServicios() {
                         >
                           <div>
                             <div className="flex justify-between items-start mb-4">
-                              <h3 className="font-bold text-aura-plum text-lg leading-tight pr-4">
+                              <h3 className="font-bold text-aura-plum text-lg leading-tight pr-4 flex flex-wrap items-center gap-2">
                                 {s.name}
+                                {!s.is_active && (
+                                  <span className="text-[9px] bg-red-100 text-red-500 px-2 py-0.5 rounded-full uppercase tracking-widest font-black border border-red-200">
+                                    Inactivo
+                                  </span>
+                                )}
                               </h3>
                               <span className="text-[10px] font-black text-purple-400 bg-purple-50 px-3 py-1 rounded-full border border-purple-100 uppercase tracking-widest">
                                 {s.duration_minutes} min
@@ -475,7 +531,7 @@ export default function PanelServicios() {
       {/* --- MODAL DE SERVICIO --- */}
       {isServiceModalOpen && (
         <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-100 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-white">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-300 border border-white">
             <div className="p-8 border-b border-purple-50 bg-purple-50/30 flex justify-between items-center">
               <h3 className="text-3xl font-serif text-aura-plum">
                 {editingService ? "Editar Tratamiento" : "Nuevo Tratamiento"}
@@ -488,7 +544,6 @@ export default function PanelServicios() {
               </button>
             </div>
             <form onSubmit={handleServiceSubmit} className="p-10 space-y-6">
-              {/* Nuevo Input para la Imagen con Previsualización */}
               <div>
                 <label className={labelStyles}>Imagen (Opcional)</label>
 
@@ -585,7 +640,7 @@ export default function PanelServicios() {
                     />
                   </div>
                   <div>
-                    <label className={labelStyles}>Duración (min)</label>
+                    <label className={labelStyles}>Duración(min)</label>
                     <input
                       type="number"
                       required
@@ -601,13 +656,52 @@ export default function PanelServicios() {
                   </div>
                 </div>
               </div>
+              {/* Checkbox para Activar/Desactivar */}
+              <div className="flex items-center gap-3 bg-purple-50/50 p-4 rounded-2xl border border-purple-100 mt-4">
+                <input
+                  type="checkbox"
+                  id="is_active"
+                  checked={serviceForm.is_active}
+                  onChange={(e) =>
+                    setServiceForm({
+                      ...serviceForm,
+                      is_active: e.target.checked,
+                    })
+                  }
+                  className="w-5 h-5 text-aura-plum border-purple-300 rounded focus:ring-aura-plum cursor-pointer"
+                />
+                <div>
+                  <label
+                    htmlFor="is_active"
+                    className="text-sm font-bold text-aura-plum cursor-pointer block"
+                  >
+                    Servicio Activo
+                  </label>
+                  <span className="text-xs text-gray-500 font-light italic">
+                    Si lo desmarcas, los clientes no podrán reservarlo.
+                  </span>
+                </div>
+              </div>
 
-              <button
-                type="submit"
-                className="w-full bg-aura-plum text-white py-5 rounded-[2rem] font-bold text-lg shadow-lg hover:scale-[1.02] active:scale-95 transition-all mt-4"
-              >
-                Guardar Servicio
-              </button>
+              {/* --- BOTONES DE ACCIÓN --- */}
+              <div className="flex gap-4 mt-8">
+                {editingService && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteClick} // 🔥 CAMBIADO: Antes ponía handleDeleteService
+                    className="px-6 bg-red-50 text-red-500 rounded-[2rem] font-bold hover:bg-red-100 transition-all flex items-center justify-center border border-red-100"
+                    title="Borrar Servicio"
+                  >
+                    <span className="material-symbols-outlined">delete</span>
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="flex-1 bg-aura-plum text-white py-5 rounded-[2rem] font-bold text-lg shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  Guardar Servicio
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -630,6 +724,62 @@ export default function PanelServicios() {
             <button
               onClick={() => setShowSuccessModal(false)}
               className="w-full bg-aura-plum text-white py-4 rounded-2xl font-bold hover:scale-[1.02] transition-all shadow-md"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+      {/* --- MODAL DE CONFIRMACIÓN ESTILO AURA --- */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-aura-plum/40 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[3rem] border border-white shadow-2xl p-10 w-full max-w-sm flex flex-col items-center text-center animate-in zoom-in-95 duration-300">
+            <div className="w-24 h-24 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6 shadow-inner border border-orange-100">
+              <span className="material-symbols-outlined text-5xl">
+                warning
+              </span>
+            </div>
+            <h3 className="text-2xl font-serif text-aura-plum mb-3">
+              ¿Retirar servicio?
+            </h3>
+            <p className="text-gray-500 font-light italic mb-8">
+              Estás a punto de retirar este tratamiento de tu catálogo público.
+              ¿Estás seguro?
+            </p>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 bg-white text-gray-500 py-4 rounded-2xl font-bold border border-gray-200 hover:bg-gray-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeDeleteService}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 rounded-2xl font-bold hover:bg-orange-500 hover:scale-[1.02] transition-all shadow-md"
+              >
+                Sí, retirar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL DE ERROR ESTILO AURA --- */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-aura-plum/20 backdrop-blur-sm z-[400] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[3rem] border border-white shadow-2xl p-10 w-full max-w-sm flex flex-col items-center text-center animate-in zoom-in-95 duration-300">
+            <div className="w-24 h-24 bg-red-50 text-red-400 rounded-full flex items-center justify-center mb-6 shadow-inner border border-red-100">
+              <span className="material-symbols-outlined text-6xl">error</span>
+            </div>
+            <h3 className="text-2xl font-serif text-aura-plum mb-3">
+              Acción denegada
+            </h3>
+            <p className="text-gray-500 font-light italic mb-8">
+              {errorMessage}
+            </p>
+            <button
+              onClick={() => setShowErrorModal(false)}
+              className="w-full bg-red-400 text-white py-4 rounded-2xl font-bold hover:bg-red-500 hover:scale-[1.02] transition-all shadow-md"
             >
               Entendido
             </button>
