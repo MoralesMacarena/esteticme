@@ -75,9 +75,10 @@ export default function Tratamientos() {
 
   const filteredTratamientos = tratamientos.filter((t) => {
     return (
-      selectedCategory === "Todos" ||
-      (t.category_name &&
-        t.category_name.toLowerCase() === selectedCategory.toLowerCase())
+      t.is_active && // 🔥 LA REGLA DE ORO: Solo pasamos los activos
+      (selectedCategory === "Todos" ||
+        (t.category_name &&
+          t.category_name.toLowerCase() === selectedCategory.toLowerCase()))
     );
   });
 

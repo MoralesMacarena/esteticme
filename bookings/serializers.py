@@ -201,5 +201,5 @@ class PublicServiceSerializer(serializers.ModelSerializer):
         model = Service
         fields = [
             'id', 'name', 'description', 'price', 'duration_minutes', 
-            'salon_name', 'salon_address', 'salon_id', 'category_name','image'
+            'salon_name', 'salon_address', 'salon_id', 'category_name','image','is_active'
         ]
