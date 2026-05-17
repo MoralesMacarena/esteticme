@@ -48,7 +48,7 @@ export default function LatestBlogPosts() {
     <section className="w-full max-w-7xl mx-auto px-4 py-20 font-sans">
       {/* Cabecera Centrada Premium */}
       <div className="flex flex-col items-center">
-        <h2 className={sectionTitleStyles}>Wellness Insights & Trends</h2>
+        <h2 className={sectionTitleStyles}>Tendencias en Bienestar</h2>
         <p className={sectionSubtitleStyles}>
           Descubre las últimas novedades en el mundo de la estética
         </p>

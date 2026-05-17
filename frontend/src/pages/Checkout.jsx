@@ -365,9 +365,25 @@ export default function Checkout() {
                     </button>
                   </div>
                   {usePoints && (
-                    <p className="text-xs text-green-600 font-bold bg-white/60 p-2 rounded-xl text-center">
-                      ¡Se aplicará un descuento de {actualDiscount.toFixed(2)}€!
-                    </p>
+                    <div className="space-y-2 mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <p className="text-xs text-green-600 font-bold bg-white/60 p-2 rounded-xl text-center shadow-sm">
+                        ¡Se aplicará un descuento de {actualDiscount.toFixed(2)}
+                        €!
+                      </p>
+
+                      {/* 🚨 Mensaje de advertencia por No-Show 🚨 */}
+                      <div className="flex items-start gap-2 bg-orange-50/80 border border-orange-100 p-3 rounded-xl text-orange-600">
+                        <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">
+                          info
+                        </span>
+                        <p className="text-[10px] leading-tight font-medium">
+                          Los puntos se descontarán de tu saldo al confirmar. En
+                          caso de no asistir a la cita o cancelar fuera de
+                          plazo,{" "}
+                          <strong>estos puntos no serán reembolsados.</strong>
+                        </p>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}

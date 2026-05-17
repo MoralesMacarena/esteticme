@@ -151,13 +151,19 @@ class BookingSerializer(serializers.ModelSerializer):
         points_to_use = 0
         discount = Decimal('0.00')
 
-        if use_points and client and client.points > 0:
-            max_points_needed = int(original_price * 100)
-            points_to_use = min(client.points, max_points_needed)
+        # Solo aplicamos descuento si quiere usar puntos y tiene al menos 100 (1€)
+        if use_points and client and client.points >= 100:
+            # 1. Calculamos cuántos euros enteros PUEDE descontar (ej: 760 // 100 = 7)
+            max_discount_euros = Decimal(client.points // 100)
             
-            discount = Decimal(points_to_use) / Decimal('100.00')
+            # 2. El descuento no puede ser mayor que el precio de la cita
+            discount = min(max_discount_euros, original_price)
+            
+            # 3. Calculamos los puntos exactos que se van a gastar (ej: 7€ * 100 = 700 puntos)
+            points_to_use = int(discount * 100)
+            
+            # 4. Aplicamos las restas
             final_price -= discount
-            
             client.points -= points_to_use
             client.save()
 

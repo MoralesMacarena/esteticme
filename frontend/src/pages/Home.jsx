@@ -142,7 +142,7 @@ export default function Home() {
       {/* SECCIÓN DE SALONES DESTACADOS */}
       <div className="w-full max-w-7xl mx-auto px-4 py-20">
         <div className="mb-12">
-          <h2 className={sectionTitleStyles}>Premium Salons & Spas</h2>
+          <h2 className={sectionTitleStyles}>Premium Salones & Spas</h2>
           <p className={sectionSubtitleStyles}>
             Selección exclusiva de los mejor valorados
           </p>
