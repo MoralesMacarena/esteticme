@@ -214,7 +214,8 @@ export default function CreatePost() {
           </div>
 
           {/* PUBLICACIÓN */}
-          <div className="flex items-center gap-6 bg-white/80 p-8 rounded-[2.5rem] border border-purple-50">
+          {/* PUBLICACIÓN */}
+          <label className="flex items-center gap-6 bg-white/80 p-8 rounded-[2.5rem] border border-purple-50 cursor-pointer group hover:bg-white transition-all">
             <div className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -224,17 +225,19 @@ export default function CreatePost() {
                   setFormData({ ...formData, is_published: e.target.checked })
                 }
               />
-              <div className="w-11 h-6 bg-purple-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-aura-plum"></div>
+              <div className="w-14 h-7 bg-purple-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[4px] after:bg-white after:border-purple-200 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-aura-plum"></div>
             </div>
             <div>
               <p className="text-aura-plum font-bold text-sm">
                 Visibilidad Pública
               </p>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest">
-                Activar para mostrar en el feed principal
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest group-hover:text-aura-plum/60 transition-colors">
+                {formData.is_published
+                  ? "El post será visible en el feed principal"
+                  : "El post se guardará como borrador oculto"}
               </p>
             </div>
-          </div>
+          </label>
 
           <button type="submit" disabled={loading} className={pearlBtn}>
             {loading ? "Sincronizando..." : "Publicar en el Magazine"}

@@ -8,6 +8,8 @@ export default function AdminDashboard() {
     total_bookings: 0,
     latest_professionals: [],
   });
+  // 🔥 NUEVO ESTADO PARA LOS POSTS
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -19,24 +21,40 @@ export default function AdminDashboard() {
       return;
     }
 
-    fetch("http://127.0.0.1:8000/api/users/dashboard-stats/", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    })
-      .then((res) => {
-        if (res.status === 403)
+    // 🔥 AHORA HACEMOS DOS PETICIONES A LA VEZ: Estadísticas y Posts
+    Promise.all([
+      fetch("http://127.0.0.1:8000/api/users/dashboard-stats/", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }),
+      fetch("http://127.0.0.1:8000/api/blog/posts/", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+    ])
+      .then(async ([resStats, resPosts]) => {
+        if (resStats.status === 403)
           throw new Error(
             "Acceso restringido: Se requieren permisos de administrador.",
           );
-        if (!res.ok)
+        if (!resStats.ok)
           throw new Error("Error en la conexión con el servidor de métricas.");
-        return res.json();
-      })
-      .then((data) => {
-        setStats(data);
+
+        const dataStats = await resStats.json();
+        setStats(dataStats);
+
+        if (resPosts.ok) {
+          const dataPosts = await resPosts.json();
+          setPosts(
+            Array.isArray(dataPosts) ? dataPosts : dataPosts.results || [],
+          );
+        }
+
         setLoading(false);
       })
       .catch((err) => {
@@ -149,8 +167,8 @@ export default function AdminDashboard() {
 
         {/* ACCIONES Y LISTADOS */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-          {/* PANEL EDITORIAL */}
-          <div className="lg:col-span-3 bg-aura-plum rounded-[3rem] p-12 text-white shadow-2xl relative overflow-hidden">
+          {/* PANEL EDITORIAL AMPLIADO */}
+          <div className="lg:col-span-3 bg-aura-plum rounded-[3rem] p-12 text-white shadow-2xl relative overflow-hidden flex flex-col">
             <div className="relative z-10">
               <span className="inline-block bg-white/10 text-purple-200 px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-8">
                 Estrategia de Contenidos
@@ -159,11 +177,8 @@ export default function AdminDashboard() {
                 Impulsa el{" "}
                 <span className="italic text-purple-200">Magazine</span>
               </h2>
-              <p className="text-purple-100/60 text-lg font-light leading-relaxed mb-12 max-w-sm">
-                La creación de contenido fresco posiciona a EsteticMe como
-                referente en el sector.
-              </p>
-              <div className="flex flex-wrap gap-6">
+
+              <div className="flex flex-wrap gap-6 mb-10">
                 <Link to="/admin-dashboard/nuevo-post" className={pearlBtn}>
                   Redactar Artículo
                 </Link>
@@ -174,8 +189,56 @@ export default function AdminDashboard() {
                   Ver feed actual
                 </Link>
               </div>
+
+              {/* 🔥 NUEVO: LA BIBLIOTECA DE ARTÍCULOS (BORRADORES Y PUBLICADOS) */}
+              <div className="bg-white/10 rounded-[2rem] p-6 border border-white/20 backdrop-blur-md">
+                <h3 className="text-sm font-bold uppercase tracking-widest mb-4 flex items-center gap-2 text-purple-200">
+                  <span className="material-symbols-outlined text-lg">
+                    inventory_2
+                  </span>
+                  Biblioteca de Artículos
+                </h3>
+
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-white/30 [&::-webkit-scrollbar-thumb]:rounded-full">
+                  {posts.length > 0 ? (
+                    posts.map((post) => (
+                      <div
+                        key={post.id}
+                        className="bg-white/10 hover:bg-white/20 transition-all p-4 rounded-2xl flex items-center justify-between group border border-white/5"
+                      >
+                        <div className="flex-1 min-w-0 pr-4">
+                          <p className="font-bold text-white truncate">
+                            {post.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span
+                              className={`w-2 h-2 rounded-full ${post.is_published ? "bg-green-400" : "bg-orange-400"}`}
+                            ></span>
+                            <span className="text-[10px] text-purple-100 uppercase tracking-widest font-black">
+                              {post.is_published ? "Publicado" : "Borrador"}
+                            </span>
+                          </div>
+                        </div>
+                        <Link
+                          to={`/blog/${post.slug}/edit`}
+                          className="p-3 bg-white/10 rounded-xl text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-white/30 flex items-center justify-center"
+                          title="Editar Artículo"
+                        >
+                          <span className="material-symbols-outlined text-sm">
+                            edit
+                          </span>
+                        </Link>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm font-light italic opacity-70 py-4 text-center">
+                      No hay artículos en la biblioteca.
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
           </div>
 
           {/* ÚLTIMAS ALTAS */}

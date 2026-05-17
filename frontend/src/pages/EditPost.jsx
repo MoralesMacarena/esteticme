@@ -35,8 +35,10 @@ export default function EditPost() {
       )
       .catch(console.error);
 
-    // Cargar datos del post
-    fetch(`http://127.0.0.1:8000/api/blog/posts/${slug}/`)
+    // Cargar datos del post (¡CON TOKEN PARA VER BORRADORES!)
+    fetch(`http://127.0.0.1:8000/api/blog/posts/${slug}/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then((res) => {
         if (!res.ok) throw new Error("No se pudo cargar el artículo");
         return res.json();
@@ -57,7 +59,7 @@ export default function EditPost() {
         setError("Error al cargar el artículo.");
         setInitialLoading(false);
       });
-  }, [slug]);
+  }, [slug, token]);
 
   const modules = {
     toolbar: [
@@ -97,7 +99,8 @@ export default function EditPost() {
       })
       .then((data) => {
         setLoading(false);
-        navigate(`/blog/${data.slug}`);
+        // ✅ Volvemos al dashboard en lugar de a la URL pública
+        navigate(`/admin-dashboard`);
       })
       .catch(() => {
         setError("Error al guardar los cambios.");
@@ -128,8 +131,9 @@ export default function EditPost() {
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* ENCABEZADO */}
         <div className="flex items-center gap-6 mb-12">
+          {/* ✅ El botón de volver ahora te lleva al dashboard para mantener la coherencia */}
           <Link
-            to={`/blog/${slug}`}
+            to="/admin-dashboard"
             className="p-3 bg-white rounded-full text-purple-300 hover:text-aura-plum shadow-sm transition-colors"
           >
             <span className="material-symbols-outlined text-2xl">
@@ -249,7 +253,8 @@ export default function EditPost() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 bg-white/80 p-8 rounded-[2.5rem] border border-purple-50">
+          {/* ✅ CÓDIGO DEL TOGGLE ARREGLADO */}
+          <label className="flex items-center gap-6 bg-white/80 p-8 rounded-[2.5rem] border border-purple-50 cursor-pointer group hover:bg-white transition-all">
             <div className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -259,17 +264,19 @@ export default function EditPost() {
                   setFormData({ ...formData, is_published: e.target.checked })
                 }
               />
-              <div className="w-11 h-6 bg-purple-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-aura-plum"></div>
+              <div className="w-14 h-7 bg-purple-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[4px] after:bg-white after:border-purple-200 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-aura-plum"></div>
             </div>
             <div>
               <p className="text-aura-plum font-bold text-sm">
-                Estado de publicación
+                Visibilidad Pública
               </p>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest">
-                Marcar para que el post sea visible
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest group-hover:text-aura-plum/60 transition-colors">
+                {formData.is_published
+                  ? "El post será visible en el feed principal"
+                  : "El post se mantendrá como borrador oculto"}
               </p>
             </div>
-          </div>
+          </label>
 
           <button type="submit" disabled={loading} className={pearlBtn}>
             {loading ? "Actualizando..." : "Guardar Cambios"}
