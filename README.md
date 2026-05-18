@@ -62,8 +62,11 @@
     cd backend
     pip install -r requirements.txt
     python manage.py migrate
+    # (Opcional) Cargar datos de prueba para la demo:
+    python manage.py seed_demo
     python manage.py runserver
     ```
+    *Nota: El comando `seed_demo` poblará la base de datos con usuarios, salones, servicios y reservas de prueba para poder probar la plataforma al instante.*
 
 3.  **Configurar Frontend:**
     ```bash
