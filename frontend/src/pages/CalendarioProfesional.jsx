@@ -612,6 +612,14 @@ export default function CalendarioProfesional() {
                     selectedBooking.client_name ||
                     "Presencial"}
                 </p>
+                <div className="flex items-center gap-2 text-aura-plum/70 mb-4 -mt-2">
+                  <span className="material-symbols-outlined text-[16px]">
+                    call
+                  </span>
+                  <span className="text-sm font-medium">
+                    {selectedBooking.display_phone || "Sin teléfono"}
+                  </span>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className={labelStyles}>Fecha</p>
